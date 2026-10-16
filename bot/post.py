@@ -52,44 +52,71 @@ def main():
     posted = load(STATE, {})
     skip = recent_codes(posted, now)
     if args.min_since and posted:
-        last = max(dt.datetime.fromisoformat(v["at"]) for v in posted.values())
-        if now - last < dt.timedelta(minutes=args.min_since):
-            print(f"::notice::{last:%H:%M} に投稿済みなので今回は投稿しません", flush=True)
+        prev = max(dt.datetime.fromisoformat(v["at"]) for v in posted.values())
+        if now - prev < dt.timedelta(minutes=args.min_since):
+            print(f"::notice::{prev:%H:%M} に投稿済みなので今回は投稿しません", flush=True)
             return
 
+    # 同じ種類（楽天のジャンル）や同じショップの商品が続かないようにする。
+    # まず直近24時間に出したジャンル・ショップを避け、それで足りなければ直前の1件とだけ違えばよい。
+    genre_of = {c["itemCode"]: str(c["item"].get("genreId", "")) for c in candidates}
+    history = sorted(((v["at"], (v.get("genre") or genre_of.get(code, ""))[:4], code.split(":")[0])
+                      for code, v in posted.items()), reverse=True)
+    day_ago = (now - dt.timedelta(hours=24)).isoformat(timespec="minutes")
+    used = {(g, sh) for at, g, sh in history if at >= day_ago}
+    last = history[0][1:] if history else None
+
+    def kind(item):
+        # 楽天のジャンル番号は近い種類ほど上4桁がそろう（牡蠣とカニ、など）ので、上4桁で種類を見る
+        return str(item.get("genreId", ""))[:4], item.get("shopCode", "")
+
+    def too_similar(item, strict):
+        g, sh = kind(item)
+        if strict:
+            return any(g == ug or sh == ush for ug, ush in used)
+        return last is not None and (g == last[0] or sh == last[1])
+
     done = 0
-    for c in candidates:
-        code = c["itemCode"]
-        if code in skip:
-            continue
-        try:
-            item = rakuten.item(code)
-        except rakuten.RakutenError as e:
-            print(f"::warning::{e}", flush=True)
-            item = None
-        if not item or compose.score(item) == 0:
-            print(f"::notice::{code} は売り切れかセール終了のようなので飛ばします", flush=True)
-            continue
-        if not compose.on_sale(item, dt.datetime.now(JST)):
-            print(f"::notice::{code} はセール期間外（まだ始まっていない／終わった）なので飛ばします", flush=True)
-            continue
-        text = compose.compose(item, copies.get(code))
-        print(text, flush=True)
-        if args.dry_run:
-            return
-        if done:
-            time.sleep(args.gap * 60)  # 続けて投稿すると宣伝ばかりに見えるので間をあける
-        post_id = threads.publish(text, image(item))
-        posted[code] = {"at": now.isoformat(timespec="minutes"), "id": post_id,
-                        "name": compose.clean_name(item.get("itemName", "")),
-                        "url": threads.permalink(post_id)}
-        os.makedirs(os.path.dirname(STATE), exist_ok=True)
-        with open(STATE, "w", encoding="utf-8") as f:
-            json.dump(posted, f, ensure_ascii=False, indent=1)
-        print(f"::notice::投稿しました: {posted[code]['url'] or post_id}", flush=True)
-        done += 1
-        if done >= args.count:
-            return
+    for strict in (True, False):
+        for c in candidates:
+            code = c["itemCode"]
+            if code in skip or too_similar(c["item"], strict):
+                continue
+            skip.add(code)
+            try:
+                item = rakuten.item(code)
+            except rakuten.RakutenError as e:
+                print(f"::warning::{e}", flush=True)
+                item = None
+            if not item or compose.score(item) == 0:
+                print(f"::notice::{code} は売り切れかセール終了のようなので飛ばします", flush=True)
+                continue
+            if not compose.on_sale(item, dt.datetime.now(JST)):
+                print(f"::notice::{code} はセール期間外（まだ始まっていない／終わった）なので飛ばします", flush=True)
+                continue
+            text = compose.compose(item, copies.get(code))
+            print(text, flush=True)
+            if not args.dry_run:
+                if done:
+                    time.sleep(args.gap * 60)  # 続けて投稿すると宣伝ばかりに見えるので間をあける
+                try:
+                    post_id = threads.publish(text, image(item))
+                except threads.ThreadsError as e:
+                    print(f"::error::{code} を投稿できませんでした: {e}", flush=True)
+                    continue
+                posted[code] = {"at": now.isoformat(timespec="minutes"), "id": post_id,
+                                "name": compose.clean_name(item.get("itemName", "")),
+                                "genre": str(item.get("genreId", "")),
+                                "url": threads.permalink(post_id)}
+                os.makedirs(os.path.dirname(STATE), exist_ok=True)
+                with open(STATE, "w", encoding="utf-8") as f:
+                    json.dump(posted, f, ensure_ascii=False, indent=1)
+                print(f"::notice::投稿しました: {posted[code]['url'] or post_id}", flush=True)
+            used.add(kind(item))
+            last = kind(item)
+            done += 1
+            if done >= args.count:
+                return
 
     if not done:
         print("::error::投稿できる候補がありませんでした", flush=True)

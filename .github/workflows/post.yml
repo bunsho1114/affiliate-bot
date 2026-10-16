@@ -15,6 +15,10 @@ on:
         description: "投稿せずに文面だけ確認する"
         type: boolean
         default: false
+      count:
+        description: "投稿する件数"
+        type: number
+        default: 3
 
 concurrency: post
 
@@ -40,7 +44,7 @@ jobs:
           RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
           RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
-        run: python -m bot.post --count 3 --gap 10 ${{ inputs.dry_run && '--dry-run' || '' }} ${{ github.event_name == 'schedule' && '--min-since 120' || '' }}
+        run: python -m bot.post --count ${{ inputs.count || 3 }} --gap 10 ${{ inputs.dry_run && '--dry-run' || '' }} ${{ github.event_name == 'schedule' && '--min-since 120' || '' }}
       - name: 投稿の記録を state ブランチに保存
         if: ${{ always() && !inputs.dry_run && hashFiles('state/posted.json') != '' }}
         run: |

@@ -1,4 +1,5 @@
 """商品データから割引率を読み取り、Threads用の投稿文（500文字以内）を作る。"""
+import html
 import math
 import re
 
@@ -73,7 +74,7 @@ def clean_name(name, limit=42):
 
 
 def features(item, n=2):
-    text = _TAG.sub(" ", item.get("itemCaption", ""))
+    text = html.unescape(_TAG.sub(" ", item.get("itemCaption", "")))
     text = re.sub(r"https?://\S+", " ", text)
     parts = re.split(r"[。\n\r]|・|■|●|◆|★|【|】", text)
     out = []
@@ -84,7 +85,8 @@ def features(item, n=2):
             continue
         if 8 <= len(p) <= 40 and not re.search(
             r"送料|注意|ご了承|返品|発送|お届け|配送|メール|当店|在庫|JAN|型番|価格|メーカー希望|予告なく|クーポン|"
-            r"ポイント|レビュー|ランキング|保証|交換|問い合わせ|品番|サイズ|カラー|原材料|内容量|生産国|製造", p):
+            r"ポイント|レビュー|ランキング|保証|交換|問い合わせ|品番|サイズ|カラー|原材料|内容量|生産国|製造|"
+            r"振込|支払|決済|詳細は|こちら|→|あす楽|ギフト対応|のし", p) and len(re.findall(r"[ぁ-んァ-ヶ一-龯]", p)) >= len(p) * 0.4:
             if p not in out:
                 out.append(p)
         if len(out) >= n:

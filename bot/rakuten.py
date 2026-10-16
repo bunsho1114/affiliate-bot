@@ -65,4 +65,12 @@ def ranking(pages=(1, 2, 3)):
     items = []
     for page in pages:
         items += _call({"page": page}, RANKING)
+    # ランキングAPIは数値を文字列で返すので、検索APIと同じ型にそろえる
+    for it in items:
+        for key, typ in (("itemPrice", int), ("reviewCount", int), ("reviewAverage", float),
+                         ("pointRate", int), ("genreId", str)):
+            try:
+                it[key] = typ(it.get(key) or 0)
+            except ValueError:
+                it[key] = typ(0)
     return items

@@ -19,7 +19,7 @@ DAILY = "daily"
 
 def collect():
     seen, items, errors = set(), [], []
-    # 1日16件投稿しても候補が尽きないよう、各キーワード2ページ分（60件）を見る
+    # 1日12件投稿しても候補が尽きないよう、各キーワード2ページ分（60件）を見る
     for kw, page in ((kw, page) for kw in KEYWORDS for page in (1, 2)):
         try:
             found = rakuten.search(kw, page=page)

@@ -15,7 +15,7 @@ from bot import compose, rakuten, threads
 
 DAILY = "daily"
 STATE = "state/posted.json"
-REPOST_DAYS = 7
+REPOST_DAYS = 14
 JST = dt.timezone(dt.timedelta(hours=9))
 
 

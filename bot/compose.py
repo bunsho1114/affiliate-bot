@@ -1,4 +1,5 @@
 """商品データから割引率を読み取り、Threads用の投稿文（500文字以内）を作る。"""
+import datetime as dt
 import html
 import math
 import re
@@ -37,6 +38,76 @@ def discount(item):
 def coupon(item):
     """クーポン利用が条件の割引か（商品名に「クーポン」があれば条件付きとみなす）。"""
     return "クーポン" in item.get("itemName", "")
+
+
+JST = dt.timezone(dt.timedelta(hours=9))
+# 投稿を見た人が買う時間が残るよう、終わりまでこれより短いセールは投稿しない
+MIN_LEFT = dt.timedelta(minutes=30)
+
+_D = r"(\d{1,2})[/月](\d{1,2})日?(?:\s*[(（][^)）]{1,3}[)）])?\s*"  # 10/17(土) / 10月17日
+_T = r"(\d{1,2})(?:[:：時](\d{2})?分?)"                              # 9:59 / 21時
+_RANGE = re.compile(_D + _T + r"?\s*(?:[~～〜]|から|より)\s*(?:" + _D + r")?" + _T + r"?\s*(?:まで|迄)?")
+_HOURS = re.compile(_D + _T + r"\s*(?:から|より)\s*(\d{1,2})\s*時間限定")
+_UNTIL = re.compile(_D + _T + r"?\s*(?:まで|迄)")
+_DAY = re.compile(_D + r"(?:\d{1,2}[:：時]\d{0,2}\s*)?(?:限定|のみ|当日)")
+
+
+def _at(now, month, day, hour=None, minute=None, end=False):
+    """月日（年なし）を now に近い年の日時にする。時刻が無ければその日の始まり／終わり。"""
+    if hour is None:
+        hour, minute = (23, 59) if end else (0, 0)
+    year = now.year
+    if int(month) == 1 and now.month == 12:
+        year += 1
+    elif int(month) == 12 and now.month == 1:
+        year -= 1
+    try:
+        return dt.datetime(year, int(month), int(day), min(int(hour), 23), int(minute or 0), tzinfo=JST)
+    except ValueError:
+        return None
+
+
+def sale_period(item, now):
+    """セール期間 (開始, 終了) を返す。分からない側は None。
+    楽天APIのタイムセール時刻（startTime/endTime）を優先し、無ければ商品名の期間表記を読む。"""
+    def api(key):
+        try:
+            return dt.datetime.strptime(item.get(key) or "", "%Y-%m-%d %H:%M").replace(tzinfo=JST)
+        except ValueError:
+            return None
+    start, end = api("startTime"), api("endTime")
+    if start or end:
+        return start, end
+    name = item.get("itemName", "")
+    m = _HOURS.search(name)
+    if m:
+        s = _at(now, *m.group(1, 2, 3, 4))
+        return s, s and s + dt.timedelta(hours=int(m.group(5)))
+    m = _RANGE.search(name)
+    if m:
+        mo1, d1, h1, mi1, mo2, d2, h2, mi2 = m.groups()
+        s = _at(now, mo1, d1, h1, mi1)
+        e = _at(now, mo2 or mo1, d2 or d1, h2, mi2, end=True)
+        if s and e and e < s:  # 「10/15 0:00〜23:59」のように日付が省略された同じ日
+            e = None
+        return s, e
+    m = _UNTIL.search(name)
+    if m:
+        return None, _at(now, *m.groups(), end=True)
+    m = _DAY.search(name)
+    if m:
+        return _at(now, *m.groups()), _at(now, *m.groups(), end=True)
+    return None, None
+
+
+def on_sale(item, now):
+    """今セール中か。期間が書かれていなければ商品名の表記を信じて True。"""
+    start, end = sale_period(item, now)
+    if start and now < start:
+        return False
+    if end and now > end - MIN_LEFT:
+        return False
+    return True
 
 
 def points(item):
@@ -115,7 +186,7 @@ def label(item):
     return f"{'クーポン利用で' if coupon(item) else ''}{'最大' if is_max else ''}{pct}%OFF"
 
 
-def compose(item, copy=None):
+def compose(item, copy=None, now=None):
     """copy: Claudeが書いた紹介文 {"hook": str, "points": [str, str]}。無ければ商品説明から拾う。"""
     pct, is_max = discount(item)
     avg = float(item.get("reviewAverage") or 0)
@@ -135,6 +206,10 @@ def compose(item, copy=None):
         lines.append(copy["hook"][:24])
     lines += ["", clean_name(item.get("itemName", ""))]
     lines.append(f"💰 {label(item)}（ショップ表記）／投稿時点 {price:,}円{'（クーポン適用前）' if cp else ''}")
+    end = sale_period(item, now or dt.datetime.now(JST))[1]
+    if end:
+        week = "月火水木金土日"[end.weekday()]
+        lines.append(f"⏰ {end.month}/{end.day}({week}) {end.hour}:{end.minute:02d}まで（ショップ表記）")
     lines.append(f"⭐ 評価{avg:.2f}（レビュー{cnt:,}件）")
     if pt:
         lines.append(f"🎁 ポイント{pt}倍")

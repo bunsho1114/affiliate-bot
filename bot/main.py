@@ -65,9 +65,14 @@ def main():
     args = ap.parse_args()
 
     items, errors = collect()
+    now = dt.datetime.now(post.JST)
     # 最近 Threads に投稿した商品は候補から外す
-    skip = post.recent_codes(post.load(post.STATE, {}), dt.datetime.now(post.JST))
-    ranked = sorted((i for i in items if compose.score(i) > 0 and i["itemCode"] not in skip),
+    skip = post.recent_codes(post.load(post.STATE, {}), now)
+    # セールが終わった商品も外す（これから始まる商品は残し、投稿のときに始まっていれば使う）
+    ended = {i["itemCode"] for i in items
+             if (end := compose.sale_period(i, now)[1]) and end - compose.MIN_LEFT < now}
+    ranked = sorted((i for i in items
+                     if compose.score(i) > 0 and i["itemCode"] not in skip | ended),
                     key=compose.score, reverse=True)
     copies = load_copy()
 

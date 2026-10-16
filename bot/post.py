@@ -1,7 +1,7 @@
 """今日の候補から選んで Threads に投稿し、state/posted.json に記録する。
 
 同じ商品は REPOST_DAYS 日のあいだ投稿しない。投稿直前に楽天から商品情報を取り直し、
-売り切れやセール終了の商品は飛ばす。
+売り切れやセール終了の商品、セール期間外の商品は飛ばす。
 使い方: python -m bot.post [--count 4] [--dry-run]
 """
 import argparse
@@ -16,7 +16,7 @@ from bot import compose, rakuten, threads
 DAILY = "daily"
 STATE = "state/posted.json"
 REPOST_DAYS = 14
-JST = dt.timezone(dt.timedelta(hours=9))
+JST = compose.JST
 
 
 def load(path, default):
@@ -62,6 +62,9 @@ def main():
             item = None
         if not item or compose.score(item) == 0:
             print(f"::notice::{code} は売り切れかセール終了のようなので飛ばします", flush=True)
+            continue
+        if not compose.on_sale(item, dt.datetime.now(JST)):
+            print(f"::notice::{code} はセール期間外（まだ始まっていない／終わった）なので飛ばします", flush=True)
             continue
         text = compose.compose(item, copies.get(code))
         print(text, flush=True)

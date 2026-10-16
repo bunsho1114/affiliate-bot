@@ -77,7 +77,9 @@ def build():
     candidates = post.load(f"{post.DAILY}/candidates.json", [])
     copies = post.load(f"{post.DAILY}/copy.json", {})
     cards = []
-    for n, c in enumerate(candidates[:COUNT]):
+    now = dt.datetime.now(post.JST)
+    on_sale = [c for c in candidates if compose.on_sale(c["item"], now)]
+    for n, c in enumerate(on_sale[:COUNT]):
         item = c["item"]
         cards.append(CARD.format(
             n=n,
@@ -88,7 +90,7 @@ def build():
             comment=html.escape(comment(c, copies.get(c["itemCode"]))),
             room=html.escape(ROOM_URL.format(code=urllib.parse.quote(c["itemCode"], safe=":"))),
         ))
-    date = dt.datetime.now(post.JST).strftime("%-m月%-d日 %H:%M")
+    date = now.strftime("%-m月%-d日 %H:%M")
     body = "\n".join(cards) or "<p>今日の候補はまだありません。</p>"
     return PAGE.format(date=date, cards=body)
 

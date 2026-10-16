@@ -42,6 +42,8 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="投稿せずに文面だけ表示する")
     ap.add_argument("--count", type=int, default=1, help="1回に投稿する件数")
     ap.add_argument("--gap", type=int, default=10, help="投稿と投稿のあいだの分数")
+    ap.add_argument("--min-since", type=int, default=0,
+                    help="直前の投稿からこの分数が経っていなければ何もしない（遅れて動いた予定の二重投稿よけ）")
     args = ap.parse_args()
 
     now = dt.datetime.now(JST)
@@ -49,6 +51,11 @@ def main():
     copies = load(f"{DAILY}/copy.json", {})
     posted = load(STATE, {})
     skip = recent_codes(posted, now)
+    if args.min_since and posted:
+        last = max(dt.datetime.fromisoformat(v["at"]) for v in posted.values())
+        if now - last < dt.timedelta(minutes=args.min_since):
+            print(f"::notice::{last:%H:%M} に投稿済みなので今回は投稿しません", flush=True)
+            return
 
     done = 0
     for c in candidates:

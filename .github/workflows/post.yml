@@ -34,13 +34,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: 1件投稿する
+      - name: 投稿する
         env:
           RAKUTEN_APP_ID: ${{ secrets.RAKUTEN_APP_ID }}
           RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
           RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
-        run: python -m bot.post --count 3 --gap 10 ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: python -m bot.post --count 3 --gap 10 ${{ inputs.dry_run && '--dry-run' || '' }} ${{ github.event_name == 'schedule' && '--min-since 120' || '' }}
       - name: 投稿の記録を state ブランチに保存
         if: ${{ always() && !inputs.dry_run && hashFiles('state/posted.json') != '' }}
         run: |

@@ -1,0 +1,71 @@
+name: Threadsに投稿する
+
+# 朝・昼・夜（日本時間 7:27 / 12:13 / 20:33）に1件ずつ投稿する。
+# 投稿した商品は state ブランチの posted.json に記録し、14日間は同じ商品を投稿しない。
+# あわせて楽天ROOM用の「今日のリスト」ページを GitHub Pages に公開する。
+on:
+  schedule:
+    - cron: "27 22 * * *"
+    - cron: "13 3 * * *"
+    - cron: "33 11 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "投稿せずに文面だけ確認する"
+        type: boolean
+        default: false
+
+concurrency: post
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: 今日の候補と投稿の記録を取ってくる
+        run: |
+          mkdir -p daily state
+          git fetch -q origin daily
+          for f in candidates.json copy.json; do git show FETCH_HEAD:$f > daily/$f; done
+          if git fetch -q origin state; then git show FETCH_HEAD:posted.json > state/posted.json || true; fi
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 1件投稿する
+        env:
+          RAKUTEN_APP_ID: ${{ secrets.RAKUTEN_APP_ID }}
+          RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
+          RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+        run: python -m bot.post ${{ inputs.dry_run && '--dry-run' || '' }}
+      - name: 投稿の記録を state ブランチに保存
+        if: ${{ !inputs.dry_run }}
+        run: |
+          cd state
+          git init -q -b state
+          git -c user.name=bot -c user.email=bot@users.noreply.github.com add -A
+          git -c user.name=bot -c user.email=bot@users.noreply.github.com commit -qm "post ${{ github.run_id }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" state
+      - name: 楽天ROOM用のページを作る
+        if: always()
+        run: python -m bot.room
+      - uses: actions/upload-pages-artifact@v3
+        if: always()
+        with:
+          path: site
+
+  room:
+    needs: post
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

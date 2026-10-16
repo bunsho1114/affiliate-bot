@@ -15,20 +15,14 @@ class RakutenError(Exception):
     pass
 
 
-def search(keyword, hits=30, page=1, sort="-reviewCount", min_price=1000):
+def _call(extra):
     params = {
         "applicationId": os.environ["RAKUTEN_APP_ID"],
         "accessKey": os.environ["RAKUTEN_ACCESS_KEY"],
         "affiliateId": os.environ.get("RAKUTEN_AFFILIATE_ID", ""),
-        "keyword": keyword,
-        "hits": hits,
-        "page": page,
-        "sort": sort,
-        "minPrice": min_price,
-        "availability": 1,
-        "imageFlag": 1,
         "format": "json",
         "formatVersion": 2,
+        **extra,
     }
     url = ENDPOINT + "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={
@@ -41,7 +35,25 @@ def search(keyword, hits=30, page=1, sort="-reviewCount", min_price=1000):
             data = json.load(res)
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "replace")[:500]
-        raise RakutenError(f"HTTP {e.code} for keyword={keyword!r}: {body}") from None
+        raise RakutenError(f"HTTP {e.code} for {extra}: {body}") from None
     finally:
         time.sleep(1.2)  # 楽天APIは1秒に1回まで
     return data.get("Items", [])
+
+
+def search(keyword, hits=30, page=1, sort="-reviewCount", min_price=1000):
+    return _call({
+        "keyword": keyword,
+        "hits": hits,
+        "page": page,
+        "sort": sort,
+        "minPrice": min_price,
+        "availability": 1,
+        "imageFlag": 1,
+    })
+
+
+def item(code):
+    """商品コード（shop:12345）で今の商品情報を取り直す。売り切れなどで無ければ None。"""
+    found = _call({"itemCode": code, "availability": 1})
+    return found[0] if found else None

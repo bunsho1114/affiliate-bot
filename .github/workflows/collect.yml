@@ -17,9 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: これまでの紹介文を取ってくる
+      - name: これまでの紹介文と投稿の記録を取ってくる
         run: |
-          mkdir -p daily
+          mkdir -p daily state
+          if git fetch -q origin state; then git show FETCH_HEAD:posted.json > state/posted.json || true; fi
           if git fetch -q origin daily; then git show FETCH_HEAD:copy.json > daily/copy.json || echo "{}" > daily/copy.json; else echo "{}" > daily/copy.json; fi
       - uses: actions/setup-python@v5
         with:

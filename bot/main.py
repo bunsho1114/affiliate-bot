@@ -4,13 +4,14 @@ daily/copy.json に Claude が書いた紹介文があれば使う（毎朝の�
 使い方: python -m bot.main --preview 5
 """
 import argparse
+import datetime as dt
 import html
 import json
 import os
 import re
 import sys
 
-from bot import compose, rakuten
+from bot import compose, post, rakuten
 
 KEYWORDS = ["半額", "50%OFF", "40%OFF", "30%OFF", "タイムセール", "クーポンで"]
 DAILY = "daily"
@@ -63,7 +64,10 @@ def main():
     args = ap.parse_args()
 
     items, errors = collect()
-    ranked = sorted((i for i in items if compose.score(i) > 0), key=compose.score, reverse=True)
+    # 最近 Threads に投稿した商品は候補から外す
+    skip = post.recent_codes(post.load(post.STATE, {}), dt.datetime.now(post.JST))
+    ranked = sorted((i for i in items if compose.score(i) > 0 and i["itemCode"] not in skip),
+                    key=compose.score, reverse=True)
     copies = load_copy()
 
     out = [f"# 投稿文の見本（{len(items)}件取得、条件に合う商品 {len(ranked)}件）", ""]

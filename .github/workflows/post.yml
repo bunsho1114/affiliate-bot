@@ -1,6 +1,6 @@
 name: Threadsに投稿する
 
-# 朝・昼・夜・夜2回目（日本時間 7:27 / 11:25 / 17:55 / 21:55。混雑で数分遅れるので少し早めに設定）に3件ずつ、10分おきに投稿する。
+# 朝・昼・夜・夜2回目（日本時間 7:27 / 11:25 / 17:55 / 21:55。混雑で数分遅れるので少し早めに設定）に2件ずつ、10分おきに投稿する。
 # 投稿した商品は state ブランチの posted.json に記録し、14日間は同じ商品を投稿しない。
 # あわせて楽天ROOM用の「今日のリスト」ページを GitHub Pages に公開する。
 on:
@@ -18,7 +18,7 @@ on:
       count:
         description: "投稿する件数"
         type: number
-        default: 3
+        default: 2
 
 concurrency: post
 
@@ -44,7 +44,7 @@ jobs:
           RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
           RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
-        run: python -m bot.post --count ${{ inputs.count || 3 }} --gap 10 ${{ inputs.dry_run && '--dry-run' || '' }} ${{ github.event_name == 'schedule' && '--min-since 120' || '' }}
+        run: python -m bot.post --count ${{ inputs.count || 2 }} --gap 10 ${{ inputs.dry_run && '--dry-run' || '' }} ${{ github.event_name == 'schedule' && '--min-since 120' || '' }}
       - name: 投稿の記録を state ブランチに保存
         if: ${{ always() && !inputs.dry_run && hashFiles('state/posted.json') != '' }}
         run: |

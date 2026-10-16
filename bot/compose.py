@@ -118,19 +118,27 @@ def points(item):
     return rate if rate >= 5 else None
 
 
-def score(item):
+# 「2点で半額」のような、まとめ買いが条件の割引
+_BUNDLE = re.compile(r"\d+\s*[点個本枚箱袋着足セット]\s*(以上)?\s*(で|購入|買い|ご購入)|まとめ買い|対象.{0,6}\d+点")
+
+
+def score(item, ranked=None):
+    """売れ筋ほど高い点。ranked は楽天ランキングに入っている商品コードの集合（あれば加点）。"""
     d = discount(item)
     if not d:
         return 0
     pct, is_max = d
     avg = float(item.get("reviewAverage") or 0)
     cnt = int(item.get("reviewCount") or 0)
-    # 80%超の割引表記は元値の根拠が怪しいことが多いので除外する
-    if avg < 4.0 or cnt < 30 or pct > 80:
+    # 売れ筋だけに絞る：評価4.3以上・レビュー1000件以上・30%以上引き。
+    # 80%超の割引表記は元値の根拠が怪しいことが多く、まとめ買い条件の割引は分かりにくいので除外する
+    if avg < 4.3 or cnt < 1000 or pct < 30 or pct > 80 or _BUNDLE.search(item.get("itemName", "")):
         return 0
-    s = pct * avg * math.log10(cnt)
+    # 売れている量（レビュー件数）を一番重く、割引率は控えめに効かせる
+    s = avg * math.log10(cnt) ** 2 * math.sqrt(pct)
+    if ranked and item.get("itemCode") in ranked:
+        s *= 1.5
     return s * (0.7 if is_max else 1.0)
-
 
 _NOISE = re.compile(
     r"\d{1,2}[/月]\d{1,2}日?\s*([(（][^)）]{1,3}[)）])?\s*(\d{1,2}[:：時]\d{0,2}\s*)?(まで|迄|から|より|限定)?|\d{1,2}[:：]\d{2}\s*(まで|迄)|＼[^／]*／|\\[^/]*/|楽天(ランキング|市場)?\s*\d+位|ランキング\s*\d+位|\d+冠|"

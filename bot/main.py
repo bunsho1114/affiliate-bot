@@ -65,6 +65,20 @@ def main():
     args = ap.parse_args()
 
     items, errors = collect()
+    # 楽天ランキングに入っている商品は売れ筋なので候補に加え、点も上げる
+    try:
+        top = rakuten.ranking()
+        print(f"::notice::楽天ランキング {len(top)}件を取得", flush=True)
+    except rakuten.RakutenError as e:
+        print(f"::warning::楽天ランキングを取れなかったのでランキング加点なしで選びます: {e}", flush=True)
+        top = []
+    ranked_codes = {i.get("itemCode") for i in top}
+    seen = {i["itemCode"] for i in items}
+    items += [i for i in top if i.get("itemCode") and i["itemCode"] not in seen]
+
+    def points_of(i):
+        return compose.score(i, ranked_codes)
+
     now = dt.datetime.now(post.JST)
     # 最近 Threads に投稿した商品は候補から外す
     skip = post.recent_codes(post.load(post.STATE, {}), now)
@@ -72,8 +86,8 @@ def main():
     ended = {i["itemCode"] for i in items
              if (end := compose.sale_period(i, now)[1]) and end - compose.MIN_LEFT < now}
     ranked = sorted((i for i in items
-                     if compose.score(i) > 0 and i["itemCode"] not in skip | ended),
-                    key=compose.score, reverse=True)
+                     if points_of(i) > 0 and i["itemCode"] not in skip | ended),
+                    key=points_of, reverse=True)
     copies = load_copy()
 
     out = [f"# 投稿文の見本（{len(items)}件取得、条件に合う商品 {len(ranked)}件）", ""]

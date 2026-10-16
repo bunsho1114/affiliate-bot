@@ -7,6 +7,7 @@ import urllib.parse
 import urllib.request
 
 ENDPOINT = "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701"
+RANKING = "https://openapi.rakuten.co.jp/ichibaranking/api/IchibaItem/Ranking/20220601"
 # 楽天のアプリ登録で「許可されたWebサイト」に入れたドメイン。新APIはこれをRefererで確認する。
 SITE = "https://bunsho1114.github.io/"
 
@@ -15,7 +16,7 @@ class RakutenError(Exception):
     pass
 
 
-def _call(extra):
+def _call(extra, endpoint=ENDPOINT):
     params = {
         "applicationId": os.environ["RAKUTEN_APP_ID"],
         "accessKey": os.environ["RAKUTEN_ACCESS_KEY"],
@@ -24,7 +25,7 @@ def _call(extra):
         "formatVersion": 2,
         **extra,
     }
-    url = ENDPOINT + "?" + urllib.parse.urlencode(params)
+    url = endpoint + "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={
         "Referer": SITE,
         "Origin": SITE.rstrip("/"),
@@ -57,3 +58,11 @@ def item(code):
     """商品コード（shop:12345）で今の商品情報を取り直す。売り切れなどで無ければ None。"""
     found = _call({"itemCode": code, "availability": 1})
     return found[0] if found else None
+
+
+def ranking(pages=(1, 2, 3)):
+    """楽天市場の総合ランキング上位（1ページ30件）の商品。"""
+    items = []
+    for page in pages:
+        items += _call({"page": page}, RANKING)
+    return items

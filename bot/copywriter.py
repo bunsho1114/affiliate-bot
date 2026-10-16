@@ -60,12 +60,18 @@ def write(item, discount_label):
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     })
+    raw = ""
     try:
         with urllib.request.urlopen(req, timeout=60) as res:
-            data = json.load(res)
-        out = json.loads(data["choices"][0]["message"]["content"])
-    except (urllib.error.URLError, KeyError, ValueError, TimeoutError) as e:
-        detail = e.read().decode("utf-8", "replace")[:300] if isinstance(e, urllib.error.HTTPError) else str(e)
+            raw = res.read().decode("utf-8", "replace")
+        content = json.loads(raw)["choices"][0]["message"]["content"]
+        content = re.sub(r"^```(?:json)?\s*|\s*```$", "", content.strip())
+        out = json.loads(content)
+    except (urllib.error.URLError, KeyError, ValueError, TimeoutError, IndexError) as e:
+        if isinstance(e, urllib.error.HTTPError):
+            detail = f"HTTP {e.code} " + e.read().decode("utf-8", "replace")[:300]
+        else:
+            detail = f"{e} / 応答: {raw[:300]!r}"
         print(f"::warning::紹介文のAI生成に失敗したので、商品説明から拾った文を使います: {detail}", flush=True)
         return None
 

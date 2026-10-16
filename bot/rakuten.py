@@ -6,7 +6,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-ENDPOINT = "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20220601"
+ENDPOINT = "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701"
 # 楽天のアプリ登録で「許可されたWebサイト」に入れたドメイン。新APIはこれをRefererで確認する。
 SITE = "https://bunsho1114.github.io/"
 

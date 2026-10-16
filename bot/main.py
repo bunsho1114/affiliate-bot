@@ -1,15 +1,19 @@
-"""セール商品を集めて点数順に並べ、投稿文の見本を作る（ステップ2：投稿はしない）。
+"""セール商品を集めて点数順に並べ、候補と投稿文の見本を daily/ に書き出す。
 
+daily/copy.json に Claude が書いた紹介文があれば使う（毎朝の予定タスクが書く）。
 使い方: python -m bot.main --preview 5
 """
 import argparse
+import html
 import json
 import os
+import re
 import sys
 
 from bot import compose, rakuten
 
 KEYWORDS = ["半額", "50%OFF", "40%OFF", "30%OFF", "タイムセール", "クーポンで"]
+DAILY = "daily"
 
 
 def collect():
@@ -29,28 +33,55 @@ def collect():
     return items, errors
 
 
+def load_copy():
+    try:
+        with open(f"{DAILY}/copy.json", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, ValueError):
+        return {}
+
+
+def slim(item):
+    """Claudeが紹介文を書くのに必要な情報だけにする。"""
+    caption = html.unescape(re.sub(r"<[^>]+>", " ", item.get("itemCaption", "")))
+    return {
+        "itemCode": item["itemCode"],
+        "itemName": item.get("itemName", ""),
+        "itemCaption": re.sub(r"\s+", " ", caption).strip()[:1500],
+        "sale": compose.label(item),
+        "itemPrice": item.get("itemPrice"),
+        "reviewAverage": item.get("reviewAverage"),
+        "reviewCount": item.get("reviewCount"),
+        "item": item,
+    }
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--preview", type=int, default=5, help="見本にする件数")
+    ap.add_argument("--candidates", type=int, default=10, help="紹介文を書いてもらう候補の件数")
     args = ap.parse_args()
 
     items, errors = collect()
     ranked = sorted((i for i in items if compose.score(i) > 0), key=compose.score, reverse=True)
+    copies = load_copy()
 
     out = [f"# 投稿文の見本（{len(items)}件取得、条件に合う商品 {len(ranked)}件）", ""]
     if errors:
         out += ["## エラー", ""] + [f"- `{e}`" for e in errors] + [""]
     for n, it in enumerate(ranked[: args.preview], 1):
-        text = compose.compose(it)
-        out += [f"## 見本{n}（{len(text)}文字、点数 {compose.score(it):.0f}）", "", "```", text, "```", ""]
+        copy = copies.get(it["itemCode"])
+        text = compose.compose(it, copy)
+        src = "Claudeの紹介文" if copy else "商品説明から抽出"
+        out += [f"## 見本{n}（{len(text)}文字、{src}）", "", "```", text, "```", ""]
 
     report = "\n".join(out)
     print(report)
-    os.makedirs("out", exist_ok=True)
-    with open("out/preview.md", "w", encoding="utf-8") as f:
+    os.makedirs(DAILY, exist_ok=True)
+    with open(f"{DAILY}/preview.md", "w", encoding="utf-8") as f:
         f.write(report)
-    with open("out/candidates.json", "w", encoding="utf-8") as f:
-        json.dump(ranked[:30], f, ensure_ascii=False, indent=1)
+    with open(f"{DAILY}/candidates.json", "w", encoding="utf-8") as f:
+        json.dump([slim(i) for i in ranked[: args.candidates]], f, ensure_ascii=False, indent=1)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a", encoding="utf-8") as f:

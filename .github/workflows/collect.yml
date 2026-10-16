@@ -32,7 +32,7 @@ jobs:
           RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
         run: python -m bot.main --preview 5 --candidates 25
       - name: daily ブランチに保存
-        if: always()
+        # 失敗したときは前回の候補を残すため保存しない
         run: |
           cd daily
           git init -q -b daily

@@ -115,4 +115,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        import traceback
+        # ログは読めないことがあるので、エラーの中身を注記として残す
+        print("::error::" + traceback.format_exc().replace("\n", "%0A"), flush=True)
+        raise

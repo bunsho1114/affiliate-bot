@@ -34,6 +34,11 @@ def discount(item):
     return best
 
 
+def coupon(item):
+    """クーポン利用が条件の割引か（商品名に「クーポン」があれば条件付きとみなす）。"""
+    return "クーポン" in item.get("itemName", "")
+
+
 def points(item):
     m = _POINT.search(item.get("itemName", ""))
     if m:
@@ -94,7 +99,9 @@ def features(item, n=2):
     return out
 
 
-def headline(pct, is_max):
+def headline(pct, is_max, cp=False):
+    if cp:
+        return f"クーポンで{'最大' if is_max else ''}{'半額' if pct == 50 and not is_max else f'{pct}%OFF'}！"
     if pct >= 50 and not is_max:
         return f"今なら{pct}%OFF！" if pct != 50 else "今なら半額！"
     return f"{'最大' if is_max else ''}{pct}%OFFのセール中"
@@ -105,7 +112,7 @@ _BANNED = re.compile(r"最安|No\.?1|ナンバーワン|絶対|必ず|治る|治
 
 def label(item):
     pct, is_max = discount(item)
-    return f"{'最大' if is_max else ''}{pct}%OFF"
+    return f"{'クーポン利用で' if coupon(item) else ''}{'最大' if is_max else ''}{pct}%OFF"
 
 
 def compose(item, copy=None):
@@ -122,11 +129,12 @@ def compose(item, copy=None):
         print(f"::warning::紹介文に使えない表現があったので使いません: {copy}", flush=True)
         copy = None
 
-    lines = [f"【PR】{headline(pct, is_max)}"]
+    cp = coupon(item)
+    lines = [f"【PR】{headline(pct, is_max, cp)}"]
     if copy:
         lines.append(copy["hook"][:24])
     lines += ["", clean_name(item.get("itemName", ""))]
-    lines.append(f"💰 {'最大' if is_max else ''}{pct}%OFF（ショップ表記）／投稿時点 {price:,}円")
+    lines.append(f"💰 {label(item)}（ショップ表記）／投稿時点 {price:,}円{'（クーポン適用前）' if cp else ''}")
     lines.append(f"⭐ 評価{avg:.2f}（レビュー{cnt:,}件）")
     if pt:
         lines.append(f"🎁 ポイント{pt}倍")

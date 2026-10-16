@@ -100,7 +100,10 @@ def headline(pct, is_max):
     return f"{'最大' if is_max else ''}{pct}%OFFのセール中"
 
 
-def compose(item):
+_BANNED = re.compile(r"最安|No\.?1|ナンバーワン|絶対|必ず|治る|治す|消える|痩せ|若返|効く|保証|万能|奇跡")
+
+
+def compose(item, use_ai=True):
     pct, is_max = discount(item)
     avg = float(item.get("reviewAverage") or 0)
     cnt = int(item.get("reviewCount") or 0)
@@ -108,12 +111,24 @@ def compose(item):
     pt = points(item)
     link = item.get("affiliateUrl") or item.get("itemUrl")
 
-    lines = [f"【PR】{headline(pct, is_max)}", clean_name(item.get("itemName", "")), ""]
+    label = f"{'最大' if is_max else ''}{pct}%OFF"
+    copy = None
+    if use_ai:
+        from bot import copywriter
+        copy = copywriter.write(item, label)
+        if copy and _BANNED.search(copy["hook"] + "".join(copy["points"])):
+            print(f"::warning::AIの紹介文に使えない表現があったので使いません: {copy}", flush=True)
+            copy = None
+
+    lines = [f"【PR】{headline(pct, is_max)}"]
+    if copy:
+        lines.append(copy["hook"])
+    lines += ["", clean_name(item.get("itemName", ""))]
     lines.append(f"💰 {'最大' if is_max else ''}{pct}%OFF（ショップ表記）／投稿時点 {price:,}円")
     lines.append(f"⭐ 評価{avg:.2f}（レビュー{cnt:,}件）")
     if pt:
         lines.append(f"🎁 ポイント{pt}倍")
-    for f in features(item):
+    for f in (copy["points"] if copy else features(item)):
         lines.append(f"✔ {f}")
     tail = ["", "▶ 楽天で見る", link, "※価格・在庫は変わることがあります"]
 

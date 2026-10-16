@@ -19,8 +19,10 @@ def discount(item):
         pct = int(m.group(2))
         if 10 <= pct <= 90 and (best is None or pct > best[0]):
             best = (pct, bool(m.group(1)))
-    if "半額" in name and (best is None or best[0] < 50):
-        best = (50, "最大" in name.split("半額")[0][-4:])
+    # 「2本目半額」「2点目半額」のような条件付きは割引とみなさない
+    half = re.search(r"(?<![本個点枚着足目])(最大)?半額", name)
+    if half and not re.search(r"\d+\s*[本個点枚着足]目\s*半額", name) and (best is None or best[0] < 50):
+        best = (50, bool(half.group(1)))
     price = item.get("itemPrice") or 0
     for m in _YEN_OFF.finditer(name):
         yen = int(m.group(2).replace(",", ""))
@@ -46,14 +48,25 @@ def score(item):
     pct, is_max = d
     avg = float(item.get("reviewAverage") or 0)
     cnt = int(item.get("reviewCount") or 0)
-    if avg < 4.0 or cnt < 30:
+    # 80%超の割引表記は元値の根拠が怪しいことが多いので除外する
+    if avg < 4.0 or cnt < 30 or pct > 80:
         return 0
     s = pct * avg * math.log10(cnt)
     return s * (0.7 if is_max else 1.0)
 
 
+_NOISE = re.compile(
+    r"＼[^／]*／|\\[^/]*/|楽天(ランキング|市場)?\s*\d+位|ランキング\s*\d+位|\d+冠|"
+    r"(最大)?\d{1,2}\s*[%％]\s*(OFF|オフ)|半額(セール)?|\d+\s*[%％]?\s*クーポン|クーポン(利用|使用)?で?|"
+    r"P\s*\d+倍|ポイント\s*\d+倍|[\d,]+\s*円(OFF|オフ|引き)?|送料無料|あす楽|即納|セール|SALE|sale|"
+    r"\d{4}年(間|度)|\d+\s*[本個点枚]目|[0-9]+%"
+)
+
+
 def clean_name(name, limit=42):
     name = _BRACKETS.sub(" ", name)
+    name = _NOISE.sub(" ", name)
+    name = re.sub(r"[【】\[\]［］〔〕＼／&＆+＋|｜]", " ", name)
     name = re.sub(r"[★☆◆◇■□●○♪！!※]+", " ", name)
     name = re.sub(r"\s+", " ", name).strip()
     return name if len(name) <= limit else name[:limit].rstrip() + "…"
@@ -67,7 +80,11 @@ def features(item, n=2):
     for p in parts:
         p = re.sub(r"\s+", " ", p).strip(" 　:：-")
         p = re.sub(r"^(商品説明|商品詳細|商品紹介|特徴|ポイント)\s*[:：]?\s*", "", p)
-        if 8 <= len(p) <= 40 and not re.search(r"送料|注意|ご了承|返品|発送|お届け|配送|メール|当店|在庫|JAN|型番", p):
+        if p.startswith(("※", "*", "＊")) or re.match(r"^[^ ]{1,8}[:：]", p):
+            continue
+        if 8 <= len(p) <= 40 and not re.search(
+            r"送料|注意|ご了承|返品|発送|お届け|配送|メール|当店|在庫|JAN|型番|価格|メーカー希望|予告なく|クーポン|"
+            r"ポイント|レビュー|ランキング|保証|交換|問い合わせ|品番|サイズ|カラー|原材料|内容量|生産国|製造", p):
             if p not in out:
                 out.append(p)
         if len(out) >= n:

@@ -1,0 +1,33 @@
+name: Threadsの鍵を延長する
+
+# Threads の鍵（THREADS_ACCESS_TOKEN）は60日で切れるので、毎週月曜に期限を延ばす。
+# 延長で鍵の文字列が変わった場合は Secrets の入れ替えが必要なので、警告を出す（鍵そのものは表示しない）。
+on:
+  schedule:
+    - cron: "7 0 * * 1"
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 期限を延ばす
+        env:
+          TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, sys, urllib.error, urllib.parse, urllib.request
+          token = os.environ["TOKEN"]
+          url = "https://graph.threads.net/refresh_access_token?" + urllib.parse.urlencode(
+              {"grant_type": "th_refresh_token", "access_token": token})
+          try:
+              data = json.load(urllib.request.urlopen(url, timeout=30))
+          except urllib.error.HTTPError as e:
+              print(f"::error::延長できませんでした: HTTP {e.code} {e.read().decode()[:300]}")
+              sys.exit(1)
+          days = int(data.get("expires_in", 0)) // 86400
+          if data.get("access_token") == token:
+              print(f"::notice::延長しました（あと{days}日有効、鍵は同じ）")
+          else:
+              print(f"::warning::延長しましたが鍵の文字列が変わりました（あと{days}日有効）。Secrets の入れ替えが必要です")
+          EOF

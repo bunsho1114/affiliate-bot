@@ -118,6 +118,8 @@ def points(item):
     return rate if rate >= 5 else None
 
 
+# 効果をうたいやすく薬機法・景品表示法で危ない商品は扱わない
+_RISKY = re.compile(r"ダイエット|サプリ|痩身|脂肪|育毛|発毛|医薬品|精力")
 # 「2点で半額」のような、まとめ買いが条件の割引
 _BUNDLE = re.compile(r"\d+\s*[点個本枚箱袋着足セット]\s*(以上)?\s*(で|購入|買い|ご購入)|まとめ買い|対象.{0,6}\d+点")
 
@@ -132,7 +134,8 @@ def score(item, ranked=None):
     cnt = int(item.get("reviewCount") or 0)
     # 売れ筋だけに絞る：評価4.3以上・レビュー1000件以上・30%以上引き。
     # 80%超の割引表記は元値の根拠が怪しいことが多く、まとめ買い条件の割引は分かりにくいので除外する
-    if avg < 4.3 or cnt < 1000 or pct < 30 or pct > 80 or _BUNDLE.search(item.get("itemName", "")):
+    if avg < 4.3 or cnt < 1000 or pct < 30 or pct > 80 or _BUNDLE.search(item.get("itemName", "")) \
+            or _RISKY.search(item.get("itemName", "")):
         return 0
     # 売れている量（レビュー件数）を一番重く、割引率は控えめに効かせる
     s = avg * math.log10(cnt) ** 2 * math.sqrt(pct)

@@ -19,6 +19,7 @@ def collect():
             found = rakuten.search(kw)
         except rakuten.RakutenError as e:
             errors.append(str(e))
+            print(f"::error::{e}", flush=True)
             continue
         for it in found:
             code = it.get("itemCode")

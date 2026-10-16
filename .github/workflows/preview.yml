@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   preview:
@@ -20,7 +20,11 @@ jobs:
           RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
           RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
         run: python -m bot.main --preview 5
-      - uses: actions/upload-artifact@v4
-        with:
-          name: preview
-          path: out/
+      - name: 見本を preview ブランチに保存
+        if: always()
+        run: |
+          mkdir -p out && cd out
+          git init -q -b preview
+          git -c user.name=bot -c user.email=bot@users.noreply.github.com add -A
+          git -c user.name=bot -c user.email=bot@users.noreply.github.com commit -qm "preview ${{ github.run_id }}" --allow-empty
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" preview

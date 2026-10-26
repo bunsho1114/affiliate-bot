@@ -2,7 +2,9 @@
 import datetime as dt
 import html
 import math
+import os
 import re
+import urllib.parse
 
 MAX_LEN = 500
 
@@ -197,6 +199,27 @@ def label(item):
     return f"{'クーポン利用で' if coupon(item) else ''}{'最大' if is_max else ''}{pct}%OFF"
 
 
+def short_link(item):
+    """楽天のアフィリエイトリンクを短くする（スマホ用の m= と計測用の rafcid= は無くても成果は付く）。"""
+    url = item.get("affiliateUrl") or item.get("itemUrl")
+    return re.sub(r"&(m|rafcid)=[^&]*", "", url)
+
+
+def amazon_link(item, copy=None):
+    """Amazon で同じ商品を探す検索リンク（アソシエイトのトラッキングID入り）。IDが無ければ None。
+
+    Amazon の商品を直接調べる仕組み（API）は売上実績が要るので、商品名で検索するリンクにする。
+    """
+    tag = os.environ.get("AMAZON_TAG")
+    if not tag:
+        return None
+    if copy and copy.get("amazon"):
+        words = copy["amazon"]  # Claude が毎朝書く検索ワード
+    else:
+        words = " ".join(re.sub(r"[〈〉《》「」『』]", " ", clean_name(item.get("itemName", ""), limit=100)).split()[:2])
+    return "https://www.amazon.co.jp/s?" + urllib.parse.urlencode({"k": words, "tag": tag})
+
+
 def compose(item, copy=None, now=None):
     """copy: Claudeが書いた紹介文 {"hook": str, "points": [str, str]}。無ければ商品説明から拾う。"""
     pct, is_max = discount(item)
@@ -204,7 +227,7 @@ def compose(item, copy=None, now=None):
     cnt = int(item.get("reviewCount") or 0)
     price = int(item.get("itemPrice") or 0)
     pt = points(item)
-    link = item.get("affiliateUrl") or item.get("itemUrl")
+    link = short_link(item)
 
     if copy and (not copy.get("hook") or not copy.get("points")
                  or _BANNED.search(copy["hook"] + "".join(copy["points"]))):
@@ -226,7 +249,10 @@ def compose(item, copy=None, now=None):
         lines.append(f"🎁 ポイント{pt}倍")
     for f in (copy["points"][:2] if copy else features(item)):
         lines.append(f"✔ {f}")
-    tail = ["", "▶ 楽天で見る", link, "※価格・在庫は変わることがあります"]
+    tail = ["", "▶ 楽天で見る", link]
+    if amazon_link(item, copy):
+        tail += ["▶ Amazonでも探す（価格は別）", amazon_link(item, copy)]
+    tail.append("※価格・在庫は変わることがあります")
 
     text = "\n".join(lines + tail)
     while len(text) > MAX_LEN and len(lines) > 4:

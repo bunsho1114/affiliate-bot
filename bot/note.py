@@ -16,11 +16,12 @@ def article(item, copy=None, now=None):
     avg = float(item.get("reviewAverage") or 0)
     cnt = int(item.get("reviewCount") or 0)
     pt = compose.points(item)
-    link = item.get("affiliateUrl") or item.get("itemUrl")
+    link = compose.short_link(item)
     end = compose.sale_period(item, now)[1]
 
     title = f"【PR】{sale}｜{compose.clean_name(item.get('itemName', ''), limit=30)}"
-    lines = ["※この記事はアフィリエイト広告（楽天アフィリエイト）を利用しています。", ""]
+    amazon = compose.amazon_link(item, copy)
+    lines = [f"※この記事はアフィリエイト広告（楽天アフィリエイト{'・Amazonアソシエイト' if amazon else ''}）を利用しています。", ""]
     if copy and copy.get("hook"):
         lines += [copy["hook"], ""]
     lines += ["■ 今日の商品", name, f"（{item.get('shopName', '')}）", ""]
@@ -37,7 +38,11 @@ def article(item, copy=None, now=None):
         lines += ["■ ここがいい"] + [f"・{g}" for g in good] + [""]
     if copy and copy.get("note"):
         lines += [copy["note"], ""]
-    lines += ["▼ 商品ページはこちら", link, "",
+    lines += ["▼ 商品ページはこちら", link, ""]
+    if amazon:
+        lines += ["▼ Amazonでも探す（セール価格は楽天のものです）", amazon, "",
+                  "Amazonのアソシエイトとして、当アカウントは適格販売により収入を得ています。", ""]
+    lines += [
               "※価格・セール内容・在庫は変わることがあります。購入前に商品ページでご確認ください。", "",
               "#PR #楽天 #セール #お買い物"]
     return title, "\n".join(lines)

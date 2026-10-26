@@ -1,4 +1,4 @@
-"""今日の1件を楽天ROOMとnoteに手で載せるためのページ（site/index.html）を作る。
+"""今日の1件を note に手で載せるためのページ（site/index.html）を作る。
 
 その日の朝 Threads に投稿した商品を出す（まだ投稿していなければ候補の1位）。
 
@@ -42,7 +42,7 @@ input{{width:100%;box-sizing:border-box;margin:8px 0;padding:8px;border:1px soli
 button{{background:transparent;color:var(--accent)}}
 </style></head><body><main>
 <h1>今日の1件</h1>
-<p class="lead">{date} 更新。Threadsには自動で投稿済みです。ROOMとnoteは、コピーして貼り付けてください。</p>
+<p class="lead">{date} 更新。Threadsには自動で投稿済みです。noteには、タイトルと本文をコピーして貼り付けてください。</p>
 {cards}
 </main>
 <script>
@@ -59,11 +59,7 @@ document.querySelectorAll("button[data-copy]").forEach(function(b){{
 CARD = """<div class="card">
 <div class="top"><img src="{img}" alt="" loading="lazy">
 <div><div class="name">{name}</div><div class="sale">{sale}（ショップ表記）／{price}円</div></div></div>
-<h2>① 楽天ROOM</h2>
-<textarea id="t{n}" rows="5" readonly>{comment}</textarea>
-<div class="btns"><button data-copy="t{n}">紹介文をコピー</button>
-<a class="room" href="{room}" target="_blank" rel="noopener">ROOMに追加</a></div>
-<h2>② note</h2>
+<h2>note</h2>
 <input id="nt{n}" readonly value="{note_title}">
 <div class="btns"><button data-copy="nt{n}">タイトルをコピー</button></div>
 <textarea id="nb{n}" rows="12" readonly>{note_body}</textarea>

@@ -93,6 +93,9 @@ CARD = """<div class="card"><p class="label">画像を保存</p>
 <img class="thumb" src="{{img}}" alt="">
 <textarea id="threads" rows="12" readonly>{{threads}}</textarea>
 <button data-copy="threads">投稿文をコピー</button>
+<p class="label" style="margin-top:12px">返信欄用（noteに投稿したあと、記事のURLを下に足して返信）</p>
+<textarea id="threply" rows="2" readonly>📝 くわしいまとめはこちら</textarea>
+<button data-copy="threply">返信用の文をコピー</button>
 <a class="btn fill" href="https://www.threads.com/" target="_blank" rel="noopener">Threadsを開く</a></div>
 <script>window.EYE={{eye}};</script>"""
 

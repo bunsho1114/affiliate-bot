@@ -232,7 +232,8 @@ def compose(item, copy=None, now=None):
         lines.append(f"🎁 ポイント{pt}倍")
     for f in (copy["points"][:2] if copy else features(item)):
         lines.append(f"✔ {f}")
-    tail = ["", "▶ 楽天で見る", link, "※価格・在庫は変わることがあります"]
+    tail = ["", "📝 くわしくはnoteにまとめています（プロフィールのリンクから）",
+            "", "▶ 楽天で見る", link, "※価格・在庫は変わることがあります"]
 
     text = "\n".join(lines + tail)
     while len(text) > MAX_LEN and len(lines) > 4:

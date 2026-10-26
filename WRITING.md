@@ -4,7 +4,7 @@
 
 1. `daily` ブランチを取ってくる：`git fetch origin daily && git checkout -B daily origin/daily`
 2. `candidates.json` を読む。各候補の `itemCode`, `itemName`, `itemCaption`, `sale`, `reviewAverage`, `reviewCount` を見る（`item` は元データなので読まなくてよい）。
-3. `copy.json`（`{itemCode: {"hook": ..., "points": [..., ...]}}`）に、まだ紹介文が無い候補の分だけ書き足す。すでにある分は変えない。
+3. `copy.json`（`{itemCode: {"hook": ..., "points": [..., ...], "note": ...}}`）に、まだ紹介文が無い候補の分だけ書き足す。すでにある分は変えない。
 4. `copy.json` をコミットして `git push origin daily` する。main ブランチは触らない。
 
 ## 紹介文のルール
@@ -13,6 +13,7 @@
 
 - `hook`：思わず手が止まる一言。20文字以内。
 - `points`：魅力を2つ。それぞれ30文字以内。
+- `note`：note記事の締めの一言。どんな人・どんな場面に向くかを、話しかけるようなやわらかい口調で2文以内（80文字以内）。
 - 機能ではなく「使う人の生活がどう良くなるか」を書く（例：大容量 → 毎日ためらわず使える）。
 - 商品説明にある具体的な数字・素材・使う場面を活かし、誰向けか・どんな場面で嬉しいかが一瞬で伝わるようにする。
 

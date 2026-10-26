@@ -108,7 +108,8 @@ CARD = """<div class="card"><p class="label">画像を保存</p>
 ROOM_URL = "https://room.rakuten.co.jp/mix?itemcode={code}&scid=we_room_upc60"
 
 
-ROOM_MAX = 1000  # ROOM の紹介文に入る文字数の目安
+ROOM_MAX = 500  # ROOM の紹介文は500字まで
+ROOM_DROP = ("【まとめ】", "結論から", "【ちょっと本音】", "セールはもうすぐ", "今回は", "【みんなの評価は？】")
 
 
 def room_comment(article):
@@ -124,9 +125,15 @@ def room_comment(article):
             line = "・" + line[2:]
         if line or (lines and lines[-1] and not lines[-1].startswith("【")):
             lines.append(line)
-    text = "\n".join(lines).strip() + "\n\n" + article["tags"]
-    if len(text) > ROOM_MAX:  # 長すぎるときは「ちょっと本音」を外す
-        text = re.sub(r"【ちょっと本音】\n.*?\n\n", "", text, flags=re.S)
+    blocks = "\n".join(lines).strip().split("\n\n") + [article["tags"]]
+    # 長いときは、ほかと重なる部分から順に外す
+    for head in ROOM_DROP:
+        if len("\n\n".join(blocks)) <= ROOM_MAX:
+            break
+        blocks = [b for b in blocks if not b.startswith(head)]
+    while len("\n\n".join(blocks)) > ROOM_MAX and len(blocks) > 3:
+        blocks.pop(-3)  # 最後の注意書きとハッシュタグは残す
+    text = "\n\n".join(blocks)
     return text
 
 

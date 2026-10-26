@@ -20,7 +20,7 @@ def article(item, copy=None, now=None):
     end = compose.sale_period(item, now)[1]
 
     title = f"【PR】{sale}｜{compose.clean_name(item.get('itemName', ''), limit=30)}"
-    lines = ["※この記事はアフィリエイト広告（楽天アフィリエイト）を利用しています。", ""]
+    lines = []  # 広告であることはタイトルの【PR】と #PR で示す
     if copy and copy.get("hook"):
         lines += [copy["hook"], ""]
     lines += ["■ 今日の商品", name, f"（{item.get('shopName', '')}）", ""]

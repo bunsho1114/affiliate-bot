@@ -162,7 +162,7 @@ def build():
             "md": html.escape(a["md"]),
             "html": a["html"],
             "tags": html.escape(a["tags"]),
-            "threads": html.escape(compose.compose(item, copy, now)),
+            "threads": html.escape(a["threads"]),
             "room": html.escape(room_comment(a)),
             "room_url": html.escape(ROOM_URL.format(code=urllib.parse.quote(c["itemCode"], safe=":"))),
             "eye": json.dumps(a["eye"], ensure_ascii=False).replace("</", "<\\/"),

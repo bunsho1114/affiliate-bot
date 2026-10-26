@@ -22,7 +22,7 @@ def _end_text(end):
 
 
 def article(item, copy=None, now=None):
-    """{"title", "md", "html", "tags", "eye"} を返す。
+    """{"title", "md", "html", "tags", "eye", "threads"} を返す。
 
     copy は Claude が毎朝書く紹介文。使うのは hook / points / note と、
     記事用の short（短い商品名）/ q（書き出しの問いかけ）/ catch（見出し画像の一言）/ honne（ちょっと本音）。
@@ -89,7 +89,23 @@ def article(item, copy=None, now=None):
     tags = " ".join(f"#{t}" for t in dict.fromkeys(["PR", "楽天", "楽天セール", tag, "お買い物", "節約"]) if t)
     eye = {"band": sale + (f"　{_end_text(end)}まで" if end else ""), "lead": f"レビュー{_short_count(cnt)}件の",
            "main": short, "catch": copy.get("catch", ""), "star": f"{avg:.2f}", "pill": copy.get("hook", "")}
-    return {"title": title, "md": "\n".join(md), "html": to_html(md), "tags": tags, "eye": eye}
+    # Threads 用：記事をぎゅっと縮めた形（500文字まで）。くわしい記事は返信欄に貼る note へ
+    head = ["【PR】" + (copy.get("q") or f"{short}が{sale}になっています！"), "",
+            f"今日見つけたのは「{short}」",
+            f"レビュー{_short_count(cnt)}件・★{avg:.2f}の人気商品が、いま{sale}（ショップ表記）", "",
+            f"💰 {price:,}円{'（クーポン適用前）' if cp else ''}（{day}時点）"]
+    if end:
+        head.append(f"⏰ {_end_text(end)}まで（ショップ表記）")
+    body = [""] + [f"✔ {g}" for g in good]
+    honne = [""] + copy["honne"].split("\n")[:1] if copy.get("honne") else []
+    tail = ["", "📝 くわしくはnoteにまとめています（リンクは返信欄に👇）", "",
+            "▶ 楽天で見る", link, "※価格・在庫は変わることがあります"]
+    threads = "\n".join(head + body + honne + tail)
+    while len(threads) > compose.MAX_LEN and (honne or body):
+        (honne or body).pop()
+        threads = "\n".join(head + body + honne + tail)
+    return {"title": title, "md": "\n".join(md), "html": to_html(md), "tags": tags, "eye": eye,
+            "threads": threads}
 
 
 def to_html(lines):

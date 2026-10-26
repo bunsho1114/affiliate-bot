@@ -46,7 +46,9 @@ textarea{width:100%;box-sizing:border-box;margin:8px 0;padding:8px;border:1px so
 </main>
 <script>
 function done(b,t){var o=b.dataset.label||b.textContent;b.dataset.label=o;b.textContent=t||"コピーしました";setTimeout(function(){b.textContent=o},2000)}
-function copyText(b,text){navigator.clipboard.writeText(text).then(function(){done(b)},function(){var t=document.createElement("textarea");t.value=text;document.body.appendChild(t);t.select();document.execCommand("copy");t.remove();done(b)})}
+function fallback(b,text){var t=document.createElement("textarea");t.value=text;t.setAttribute("readonly","");t.style.position="fixed";t.style.top="0";t.style.opacity="0";document.body.appendChild(t);t.focus();t.select();t.setSelectionRange(0,text.length);var ok=false;try{ok=document.execCommand("copy")}catch(x){}t.remove();
+  if(ok){done(b)}else{done(b,"コピーできませんでした。文を長押しして手でコピーしてください")}}
+function copyText(b,text){if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(function(){done(b)},function(){fallback(b,text)})}else{fallback(b,text)}}
 document.querySelectorAll("[data-copy]").forEach(function(b){b.onclick=function(){var e=document.getElementById(b.dataset.copy);copyText(b,e.value!==undefined?e.value:e.textContent)}});
 document.querySelectorAll("[data-select]").forEach(function(b){b.onclick=function(){var r=document.createRange();r.selectNodeContents(document.getElementById(b.dataset.select));var s=getSelection();s.removeAllRanges();s.addRange(r);done(b,"選択しました（長押しでコピー）")}});
 document.querySelectorAll("[data-rich]").forEach(function(b){b.onclick=function(){var e=document.getElementById(b.dataset.rich);

@@ -1,4 +1,4 @@
-"""今日の1件を Threads と note に手で載せるためのページ（site/index.html）を作る。
+"""今日の1件を Threads・note・楽天ROOM に手で載せるためのページ（site/index.html）を作る。
 
 その日の朝に選んだ商品を出す（まだ選んでいなければ候補の1位）。
 note 用に、見出し画像の保存・タイトル/本文/ハッシュタグのコピー（記号つき・書式つき）を並べる。
@@ -11,6 +11,7 @@ import html
 import json
 import os
 import re
+import urllib.parse
 
 from bot import compose, note, post
 
@@ -97,7 +98,24 @@ CARD = """<div class="card"><p class="label">画像を保存</p>
 <textarea id="threply" rows="2" readonly>📝 くわしいまとめはこちら</textarea>
 <button data-copy="threply">返信用の文をコピー</button>
 <a class="btn fill" href="https://www.threads.com/" target="_blank" rel="noopener">Threadsを開く</a></div>
+
+<div class="card"><p class="label">楽天ROOM の紹介文</p>
+<textarea id="room" rows="7" readonly>{{room}}</textarea>
+<button data-copy="room">紹介文をコピー</button>
+<a class="btn fill" href="{{room_url}}" target="_blank" rel="noopener">ROOMに追加</a></div>
 <script>window.EYE={{eye}};</script>"""
+
+ROOM_URL = "https://room.rakuten.co.jp/mix?itemcode={code}&scid=we_room_upc60"
+
+
+def room_comment(item, copy):
+    lines = []
+    if copy and copy.get("hook"):
+        lines.append(copy["hook"])
+    lines += [f"✔ {p}" for p in ((copy or {}).get("points", [])[:2] or compose.features(item))]
+    lines.append(f"{compose.label(item)}（ショップ表記）")
+    lines.append("#PR #楽天セール")
+    return "\n".join(lines)
 
 
 def fill(template, values):
@@ -133,6 +151,8 @@ def build():
             "html": a["html"],
             "tags": html.escape(a["tags"]),
             "threads": html.escape(compose.compose(item, copy, now)),
+            "room": html.escape(room_comment(item, copy)),
+            "room_url": html.escape(ROOM_URL.format(code=urllib.parse.quote(c["itemCode"], safe=":"))),
             "eye": json.dumps(a["eye"], ensure_ascii=False).replace("</", "<\\/"),
         })
     return fill(PAGE, {"date": now.strftime("%-m月%-d日 %H:%M"), "cards": cards})

@@ -16,6 +16,7 @@ from bot import compose, rakuten, threads
 DAILY = "daily"
 STATE = "state/posted.json"
 REPOST_DAYS = 14
+ACCOUNT = "ziyuunote1018"  # 投稿してよい Threads アカウント
 JST = compose.JST
 
 
@@ -45,6 +46,17 @@ def main():
     ap.add_argument("--min-since", type=int, default=0,
                     help="直前の投稿からこの分数が経っていなければ何もしない（遅れて動いた予定の二重投稿よけ）")
     args = ap.parse_args()
+
+    if not args.dry_run:
+        # トークンが別のアカウントのものなら投稿しない（アカウントを切り替えたときの事故よけ）
+        try:
+            who = threads.username()
+        except threads.ThreadsError as e:
+            print(f"::error::Threads のアカウントを確かめられませんでした: {e}", flush=True)
+            sys.exit(1)
+        if who != ACCOUNT:
+            print(f"::error::トークンが @{who} のものなので投稿しません（投稿先は @{ACCOUNT}）", flush=True)
+            sys.exit(1)
 
     now = dt.datetime.now(JST)
     candidates = load(f"{DAILY}/candidates.json", [])

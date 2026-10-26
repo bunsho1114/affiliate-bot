@@ -57,6 +57,10 @@ def publish(text, image_url=None):
     return _call("POST", "me/threads_publish", {"creation_id": container})["id"]
 
 
+def username():
+    return _call("GET", "me", {"fields": "username"}).get("username")
+
+
 def permalink(post_id):
     try:
         return _call("GET", post_id, {"fields": "permalink"}).get("permalink")

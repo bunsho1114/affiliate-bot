@@ -100,7 +100,7 @@ CARD = """<div class="card"><p class="label">画像を保存</p>
 <a class="btn fill" href="https://www.threads.com/" target="_blank" rel="noopener">Threadsを開く</a></div>
 
 <div class="card"><p class="label">楽天ROOM の紹介文</p>
-<textarea id="room" rows="7" readonly>{{room}}</textarea>
+<textarea id="room" rows="14" readonly>{{room}}</textarea>
 <button data-copy="room">紹介文をコピー</button>
 <a class="btn fill" href="{{room_url}}" target="_blank" rel="noopener">ROOMに追加</a></div>
 <script>window.EYE={{eye}};</script>"""
@@ -108,14 +108,26 @@ CARD = """<div class="card"><p class="label">画像を保存</p>
 ROOM_URL = "https://room.rakuten.co.jp/mix?itemcode={code}&scid=we_room_upc60"
 
 
-def room_comment(item, copy):
+ROOM_MAX = 1000  # ROOM の紹介文に入る文字数の目安
+
+
+def room_comment(article):
+    """note の記事を、ROOM に貼れる飾りなしの文にする（リンクやnote向けの一言は外す）。"""
     lines = []
-    if copy and copy.get("hook"):
-        lines.append(copy["hook"])
-    lines += [f"✔ {p}" for p in ((copy or {}).get("points", [])[:2] or compose.features(item))]
-    lines.append(f"{compose.label(item)}（ショップ表記）")
-    lines.append("#PR #楽天セール")
-    return "\n".join(lines)
+    for line in article["md"].split("\n"):
+        if line.startswith("http") or line.startswith("▼") or "スキやフォロー" in line or "商品ページでチェック" in line:
+            continue
+        line = line.replace("**", "")
+        if line.startswith("## "):
+            line = "【" + line[3:].split(" ", 1)[-1] + "】"
+        elif line.startswith("- "):
+            line = "・" + line[2:]
+        if line or (lines and lines[-1] and not lines[-1].startswith("【")):
+            lines.append(line)
+    text = "\n".join(lines).strip() + "\n\n" + article["tags"]
+    if len(text) > ROOM_MAX:  # 長すぎるときは「ちょっと本音」を外す
+        text = re.sub(r"【ちょっと本音】\n.*?\n\n", "", text, flags=re.S)
+    return text
 
 
 def fill(template, values):
@@ -151,7 +163,7 @@ def build():
             "html": a["html"],
             "tags": html.escape(a["tags"]),
             "threads": html.escape(compose.compose(item, copy, now)),
-            "room": html.escape(room_comment(item, copy)),
+            "room": html.escape(room_comment(a)),
             "room_url": html.escape(ROOM_URL.format(code=urllib.parse.quote(c["itemCode"], safe=":"))),
             "eye": json.dumps(a["eye"], ensure_ascii=False).replace("</", "<\\/"),
         })

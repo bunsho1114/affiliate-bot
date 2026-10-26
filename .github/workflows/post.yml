@@ -1,15 +1,15 @@
-name: Threadsに投稿する
+name: 今日の1件を選ぶ
 
-# 毎朝 7:27（日本時間。混雑で数分遅れるので少し早めに設定）に1件だけ投稿する。
-# 投稿した商品は state ブランチの posted.json に記録し、14日間は同じ商品を投稿しない。
-# あわせて同じ商品をnoteに載せるための「今日の1件」ページを GitHub Pages に公開する。
+# 毎朝 6:40（日本時間。6:10 の紹介文づくりのあと）に今日の1件を選び、
+# Threads と note にコピーして貼るための「今日の1件」ページを GitHub Pages に公開する。投稿は手作業。
+# 選んだ商品は state ブランチの posted.json に記録し、14日間は同じ商品を選ばない。
 on:
   schedule:
-    - cron: "27 22 * * *"
+    - cron: "40 21 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "投稿せずに文面だけ確認する"
+        description: "記録せずに文面だけ確認する"
         type: boolean
         default: false
       count:
@@ -35,14 +35,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: 投稿する
+      - name: 今日の1件を選ぶ
         env:
           RAKUTEN_APP_ID: ${{ secrets.RAKUTEN_APP_ID }}
           RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
           RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
-          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
-        run: python -m bot.post --count ${{ inputs.count || 1 }} --gap 10 ${{ inputs.dry_run && '--dry-run' || '' }} ${{ github.event_name == 'schedule' && '--min-since 120' || '' }}
-      - name: 投稿の記録を state ブランチに保存
+        run: python -m bot.post --count ${{ inputs.count || 1 }} --record-only ${{ inputs.dry_run && '--dry-run' || '' }} ${{ github.event_name == 'schedule' && '--min-since 600' || '' }}
+      - name: 選んだ商品の記録を state ブランチに保存
         if: ${{ always() && !inputs.dry_run && hashFiles('state/posted.json') != '' }}
         run: |
           cd state

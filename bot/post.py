@@ -43,11 +43,13 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="投稿せずに文面だけ表示する")
     ap.add_argument("--count", type=int, default=1, help="1回に投稿する件数")
     ap.add_argument("--gap", type=int, default=10, help="投稿と投稿のあいだの分数")
+    ap.add_argument("--record-only", action="store_true",
+                    help="Threads には投稿せず、今日の商品として記録だけする（投稿は手作業）")
     ap.add_argument("--min-since", type=int, default=0,
                     help="直前の投稿からこの分数が経っていなければ何もしない（遅れて動いた予定の二重投稿よけ）")
     args = ap.parse_args()
 
-    if not args.dry_run:
+    if not args.dry_run and not args.record_only:
         # トークンが別のアカウントのものなら投稿しない（アカウントを切り替えたときの事故よけ）
         try:
             who = threads.username()
@@ -108,22 +110,29 @@ def main():
                 continue
             text = compose.compose(item, copies.get(code))
             print(text, flush=True)
+            # 「今日の1件」ページが最新の価格で文章を作れるよう、取り直した商品情報で候補を上書きしておく
+            c["item"] = item
+            with open(f"{DAILY}/candidates.json", "w", encoding="utf-8") as f:
+                json.dump(candidates, f, ensure_ascii=False, indent=1)
             if not args.dry_run:
-                if done:
-                    time.sleep(args.gap * 60)  # 続けて投稿すると宣伝ばかりに見えるので間をあける
-                try:
-                    post_id = threads.publish(text, image(item))
-                except threads.ThreadsError as e:
-                    print(f"::error::{code} を投稿できませんでした: {e}", flush=True)
-                    continue
+                post_id = None
+                if not args.record_only:
+                    if done:
+                        time.sleep(args.gap * 60)  # 続けて投稿すると宣伝ばかりに見えるので間をあける
+                    try:
+                        post_id = threads.publish(text, image(item))
+                    except threads.ThreadsError as e:
+                        print(f"::error::{code} を投稿できませんでした: {e}", flush=True)
+                        continue
                 posted[code] = {"at": now.isoformat(timespec="minutes"), "id": post_id,
                                 "name": compose.clean_name(item.get("itemName", "")),
                                 "genre": str(item.get("genreId", "")),
-                                "url": threads.permalink(post_id)}
+                                "url": post_id and threads.permalink(post_id)}
                 os.makedirs(os.path.dirname(STATE), exist_ok=True)
                 with open(STATE, "w", encoding="utf-8") as f:
                     json.dump(posted, f, ensure_ascii=False, indent=1)
-                print(f"::notice::投稿しました: {posted[code]['url'] or post_id}", flush=True)
+                print(f"::notice::{'投稿しました' if post_id else '今日の商品に選びました'}: "
+                      f"{posted[code]['url'] or posted[code]['name']}", flush=True)
             used.add(kind(item))
             last = kind(item)
             done += 1

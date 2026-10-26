@@ -24,8 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      AMAZON_TAG: ${{ secrets.AMAZON_TAG }}  # AmazonアソシエイトのトラッキングID（無ければAmazonリンクは付けない）
     steps:
       - uses: actions/checkout@v4
       - name: 今日の候補と投稿の記録を取ってくる

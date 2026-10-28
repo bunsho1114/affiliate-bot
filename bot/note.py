@@ -90,8 +90,8 @@ def article(item, copy=None, now=None):
     tags = " ".join(f"#{t}" for t in dict.fromkeys(["PR", "楽天", "楽天セール", tag, "お買い物", "節約"]) if t)
     eye = {"band": sale + (f"　{_end_text(end)}まで" if end else ""), "lead": f"レビュー{_short_count(cnt)}件の",
            "main": short, "catch": copy.get("catch", ""), "star": f"{avg:.2f}", "pill": copy.get("hook", "")}
-    # Threads 用：4つに分けたスレッド（それぞれ500文字まで）。URLは最後の返信3にだけ入れる
-    # ① メイン投稿：フックと価値だけ ② 返信1：くわしい中身 ③ 返信2：まとめと案内 ④ 返信3：楽天のリンク
+    # Threads 用：3つに分けたスレッド（それぞれ500文字まで）。URLは最後の返信2にだけ入れる
+    # ① メイン投稿：フックと価値だけ ② 返信1：くわしい中身 ③ 返信2：まとめと楽天のリンク
     main = ["【PR】" + (copy.get("q") or f"{short}が{sale}になっています！"), "",
             f"今日見つけたのは「{short}」。",
             f"レビュー{_short_count(cnt)}件・★{avg:.2f}の人気商品が、いま{sale}になっています（ショップ表記）。", ""]
@@ -123,9 +123,9 @@ def article(item, copy=None, now=None):
     if end and end - now < dt.timedelta(hours=36):
         r2 += ["", "セールはもうすぐ終わるので、気になる方はお早めに。"]
     r2 += ["", "※価格・在庫は変わることがあります", "",
-           "くわしいまとめはプロフィールのリンク（note）から、商品ページはこの下の返信からどうぞ👇"]
-    r3 = ["▶ 楽天で見る", link, "#PR"]
-    threads = ["\n".join(main), "\n".join(r1 + extra), "\n".join(r2), "\n".join(r3)]
+           "くわしいまとめはプロフィールのリンク（note）から📝", "",
+           "▶ 商品ページはこちら", link, "#PR"]
+    threads = ["\n".join(main), "\n".join(r1 + extra), "\n".join(r2)]
     return {"title": title, "md": "\n".join(md), "html": to_html(md), "tags": tags, "eye": eye,
             "threads": threads}
 

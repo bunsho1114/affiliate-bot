@@ -94,11 +94,18 @@ CARD = """<div class="card"><p class="label">画像を保存</p>
 
 <div class="card"><p class="label">Threads の投稿文</p>
 <img class="thumb" src="{{img}}" alt="">
-<textarea id="threads" rows="12" readonly>{{threads}}</textarea>
-<button data-copy="threads">投稿文をコピー</button>
-<p class="label" style="margin-top:12px">返信欄用（noteに投稿したあと、記事のURLを下に足して返信）</p>
-<textarea id="threply" rows="2" readonly>📝 くわしいまとめはこちら</textarea>
-<button data-copy="threply">返信用の文をコピー</button>
+<p class="label" style="margin-top:12px">① メイン投稿（画像をつけて投稿）</p>
+<textarea id="th0" rows="8" readonly>{{th0}}</textarea>
+<button data-copy="th0">メイン投稿をコピー</button>
+<p class="label" style="margin-top:12px">② 自分の投稿に返信（1つめ）</p>
+<textarea id="th1" rows="12" readonly>{{th1}}</textarea>
+<button data-copy="th1">返信1をコピー</button>
+<p class="label" style="margin-top:12px">③ ②にさらに返信（2つめ）</p>
+<textarea id="th2" rows="8" readonly>{{th2}}</textarea>
+<button data-copy="th2">返信2をコピー</button>
+<p class="label" style="margin-top:12px">④ ③にさらに返信（3つめ・楽天のリンク）</p>
+<textarea id="th3" rows="4" readonly>{{th3}}</textarea>
+<button data-copy="th3">返信3をコピー</button>
 <a class="btn fill" href="https://www.threads.com/" target="_blank" rel="noopener">Threadsを開く</a></div>
 
 <div class="card"><p class="label">楽天ROOM の紹介文</p>
@@ -171,7 +178,10 @@ def build():
             "md": html.escape(a["md"]),
             "html": a["html"],
             "tags": html.escape(a["tags"]),
-            "threads": html.escape(a["threads"]),
+            "th0": html.escape(a["threads"][0]),
+            "th1": html.escape(a["threads"][1]),
+            "th2": html.escape(a["threads"][2]),
+            "th3": html.escape(a["threads"][3]),
             "room": html.escape(room_comment(a)),
             "room_url": html.escape(ROOM_URL.format(code=urllib.parse.quote(c["itemCode"], safe=":"))),
             "eye": json.dumps(a["eye"], ensure_ascii=False).replace("</", "<\\/"),

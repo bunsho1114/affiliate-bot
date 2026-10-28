@@ -76,6 +76,8 @@ def sale_period(item, now):
         except ValueError:
             return None
     start, end = api("startTime"), api("endTime")
+    if end and end - now > dt.timedelta(days=365):  # 「2999-12-31」のような終わり未定の印
+        end = None
     if start or end:
         return start, end
     name = item.get("itemName", "")

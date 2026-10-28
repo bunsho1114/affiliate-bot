@@ -25,7 +25,8 @@ def article(item, copy=None, now=None):
     """{"title", "md", "html", "tags", "eye", "threads"} を返す。
 
     copy は Claude が毎朝書く紹介文。使うのは hook / points / note と、
-    記事用の short（短い商品名）/ q（書き出しの問いかけ）/ catch（見出し画像の一言）/ honne（ちょっと本音）。
+    記事用の short（短い商品名）/ q（書き出しの問いかけ）/ catch（見出し画像の一言）/ honne（ちょっと本音）/
+    detail（Threads 返信1 用のくわしい説明）。
     """
     now = now or dt.datetime.now(compose.JST)
     copy = dict(copy or {})
@@ -89,21 +90,42 @@ def article(item, copy=None, now=None):
     tags = " ".join(f"#{t}" for t in dict.fromkeys(["PR", "楽天", "楽天セール", tag, "お買い物", "節約"]) if t)
     eye = {"band": sale + (f"　{_end_text(end)}まで" if end else ""), "lead": f"レビュー{_short_count(cnt)}件の",
            "main": short, "catch": copy.get("catch", ""), "star": f"{avg:.2f}", "pill": copy.get("hook", "")}
-    # Threads 用：記事をぎゅっと縮めた形（500文字まで）。くわしい記事は返信欄に貼る note へ
-    head = ["【PR】" + (copy.get("q") or f"{short}が{sale}になっています！"), "",
-            f"今日見つけたのは「{short}」",
-            f"レビュー{_short_count(cnt)}件・★{avg:.2f}の人気商品が、いま{sale}（ショップ表記）", "",
-            f"💰 {price:,}円{'（クーポン適用前）' if cp else ''}（{day}時点）"]
+    # Threads 用：4つに分けたスレッド（それぞれ500文字まで）。URLは最後の返信3にだけ入れる
+    # ① メイン投稿：フックと価値だけ ② 返信1：くわしい中身 ③ 返信2：まとめと案内 ④ 返信3：楽天のリンク
+    main = ["【PR】" + (copy.get("q") or f"{short}が{sale}になっています！"), "",
+            f"今日見つけたのは「{short}」。",
+            f"レビュー{_short_count(cnt)}件・★{avg:.2f}の人気商品が、いま{sale}になっています（ショップ表記）。", ""]
+    if copy.get("hook"):
+        main.append(copy["hook"])
+    main.append("どこがおトクなのか、続きで紹介します👇")
+    r1 = [f"「{short}」がどんな商品か、くわしくまとめます。", "", "■ どんな商品？", f"{name}（{item.get('shopName', '')}）"]
+    r1 += [f"・{g}" for g in good]
+    if copy.get("detail"):
+        r1 += [copy["detail"]]
+    r1 += ["", "■ どれくらいおトク？", f"・割引：{sale}（ショップ表記）",
+                                      f"・価格：{price:,}円{'（クーポン適用前）' if cp else ''}（{day}時点）"]
     if end:
-        head.append(f"⏰ {_end_text(end)}まで（ショップ表記）")
-    body = [""] + [f"✔ {g}" for g in good]
-    honne = [""] + copy["honne"].split("\n")[:1] if copy.get("honne") else []
-    tail = ["", "📝 くわしくはnoteにまとめています（リンクは返信欄に👇）", "",
-            "▶ 楽天で見る", link, "※価格・在庫は変わることがあります"]
-    threads = "\n".join(head + body + honne + tail)
-    while len(threads) > compose.MAX_LEN and (honne or body):
-        (honne or body).pop()
-        threads = "\n".join(head + body + honne + tail)
+        r1.append(f"・期限：{_end_text(end)}まで（ショップ表記）")
+    if pt:
+        r1.append(f"・ポイント{pt}倍")
+    r1 += ["", "■ みんなの評価", f"★{avg:.2f}（レビュー{cnt:,}件）", md[md.index(f"**★{avg:.2f}（レビュー{cnt:,}件）**") + 1]]
+    extra = []
+    if copy.get("honne"):
+        extra += ["", "■ ちょっと本音"] + copy["honne"].split("\n")
+    if copy.get("note"):
+        extra += ["", copy["note"]]
+    while extra and len("\n".join(r1 + extra)) > compose.MAX_LEN:
+        extra.pop()
+    if len("\n".join(r1)) > compose.MAX_LEN and copy.get("detail"):
+        r1.remove(copy["detail"])
+    r2 = ["まとめると…", f"・レビュー{_short_count(cnt)}件・★{avg:.2f}の{short}",
+          f"・{sale}（ショップ表記）" + (f"、{_end_text(end)}まで" if end else "")]
+    if end and end - now < dt.timedelta(hours=36):
+        r2 += ["", "セールはもうすぐ終わるので、気になる方はお早めに。"]
+    r2 += ["", "※価格・在庫は変わることがあります", "",
+           "くわしいまとめはプロフィールのリンク（note）から、商品ページはこの下の返信からどうぞ👇"]
+    r3 = ["▶ 楽天で見る", link, "#PR"]
+    threads = ["\n".join(main), "\n".join(r1 + extra), "\n".join(r2), "\n".join(r3)]
     return {"title": title, "md": "\n".join(md), "html": to_html(md), "tags": tags, "eye": eye,
             "threads": threads}
 

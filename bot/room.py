@@ -100,7 +100,7 @@ CARD = """<div class="card"><p class="label">画像を保存</p>
 <p class="label" style="margin-top:12px">② 自分の投稿に返信（1つめ）</p>
 <textarea id="th1" rows="12" readonly>{{th1}}</textarea>
 <button data-copy="th1">返信1をコピー</button>
-<p class="label" style="margin-top:12px">③ ②にさらに返信（2つめ・楽天のリンク入り）</p>
+<p class="label" style="margin-top:12px">③ ②にさらに返信（2つめ）</p>
 <textarea id="th2" rows="8" readonly>{{th2}}</textarea>
 <button data-copy="th2">返信2をコピー</button>
 <a class="btn fill" href="https://www.threads.com/" target="_blank" rel="noopener">Threadsを開く</a></div>

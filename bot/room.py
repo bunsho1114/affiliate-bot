@@ -56,17 +56,17 @@ document.querySelectorAll("[data-rich]").forEach(function(b){b.onclick=function(
 // 見出し画像（1280×670）をその場で描く
 (function(){var d=window.EYE;if(!d)return;var c=document.createElement("canvas");c.width=1280;c.height=670;var g=c.getContext("2d");
   var F='"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif';
-  g.fillStyle="#173C35";g.fillRect(0,0,1280,670);g.fillStyle="#F5B731";g.fillRect(0,0,1280,100);
-  g.textBaseline="middle";g.fillStyle="#1E3A34";g.font="900 44px "+F;g.fillText("楽天セール",56,52);
+  g.fillStyle="#FFE4EC";g.fillRect(0,0,1280,670);g.fillStyle="rgba(255,255,255,.6)";for(var yy=130;yy<670;yy+=60)for(var xx=(yy/60%2)*30;xx<1280;xx+=60){g.beginPath();g.arc(xx,yy,7,0,7);g.fill()}g.fillStyle="#FFB8CB";g.fillRect(0,0,1280,100);
+  g.textBaseline="middle";g.fillStyle="#8A3B5C";g.font="900 44px "+F;g.fillText("楽天セール",56,52);
   var x=56+g.measureText("楽天セール").width+20;g.font="900 42px "+F;var w=g.measureText(d.band).width;
-  g.fillStyle="#D9553B";g.fillRect(x-12,20,w+24,64);g.fillStyle="#fff";g.fillText(d.band,x,53);
-  g.textBaseline="alphabetic";g.fillStyle="#fff";g.font="900 54px "+F;g.fillText(d.lead,56,215);
+  g.fillStyle="#FF6F91";g.beginPath();g.roundRect(x-16,20,w+32,64,32);g.fill();g.fillStyle="#fff";g.fillText(d.band,x,53);
+  g.textBaseline="alphabetic";g.fillStyle="#8A3B5C";g.font="900 54px "+F;g.fillText(d.lead,56,215);
   var size=150;do{g.font="900 "+size+"px "+F;size-=4}while(g.measureText(d.main).width>860&&size>60);
-  g.fillStyle="#F7C844";g.fillText(d.main,56,215+size+20);
-  if(d.catch){var cs=64;do{g.font="900 "+cs+"px "+F;cs-=2}while(g.measureText(d.catch).width>1160&&cs>30);g.fillStyle="#fff";g.fillText(d.catch,56,500)}
-  g.beginPath();g.arc(1080,230,130,0,7);g.fillStyle="#F7F4DC";g.fill();g.beginPath();g.arc(1080,230,120,0,7);g.fillStyle="#D9553B";g.fill();
+  g.fillStyle="#E84F7D";g.fillText(d.main,56,215+size+20);
+  if(d.catch){var cs=64;do{g.font="900 "+cs+"px "+F;cs-=2}while(g.measureText(d.catch).width>1160&&cs>30);g.fillStyle="#7A5AA6";g.fillText(d.catch,56,500)}
+  g.beginPath();g.arc(1080,230,130,0,7);g.fillStyle="#fff";g.fill();g.beginPath();g.arc(1080,230,120,0,7);g.fillStyle="#FF8FAB";g.fill();
   g.textAlign="center";g.fillStyle="#fff";g.font="900 32px "+F;g.fillText("みんなの評価",1080,200);g.font="900 64px "+F;g.fillText("★"+d.star,1080,275);g.textAlign="left";
-  if(d.pill){g.font="900 36px "+F;var pw=g.measureText(d.pill).width;g.fillStyle="#F7F4DC";g.beginPath();g.roundRect(56,560,pw+56,64,32);g.fill();g.fillStyle="#173C35";g.fillText(d.pill,84,605)}
+  if(d.pill){g.font="900 36px "+F;var pw=g.measureText(d.pill).width;g.fillStyle="#fff";g.beginPath();g.roundRect(56,560,pw+56,64,32);g.fill();g.fillStyle="#E84F7D";g.fillText(d.pill,84,605)}
   var url=c.toDataURL("image/png");document.getElementById("eyeimg").src=url;var a=document.getElementById("eyesave");a.href=url;})();
 </script>
 </body></html>

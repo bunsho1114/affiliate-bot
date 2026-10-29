@@ -51,7 +51,9 @@ jobs:
           git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" state
       - name: 楽天ROOM用のページを作る
         if: always()
-        run: python -m bot.room
+        run: |
+          python -m bot.room
+          cp -r pages/. site/  # 手で作った記事ページ（例: /brita/）も一緒に公開する
       - uses: actions/upload-pages-artifact@v3
         if: always()
         with:

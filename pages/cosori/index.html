@@ -156,7 +156,7 @@ document.querySelectorAll("[data-rich]").forEach(function(b){b.onclick=function(
   g.fillStyle="#E84F7D";g.fillText(d.main,56,215+size+20);
   var cs=64;do{g.font="900 "+cs+"px "+F;cs-=2}while(g.measureText(d.catch).width>1160&&cs>30);g.fillStyle="#7A5AA6";g.fillText(d.catch,56,500);
   g.beginPath();g.arc(1080,230,130,0,7);g.fillStyle="#fff";g.fill();g.beginPath();g.arc(1080,230,120,0,7);g.fillStyle="#FF8FAB";g.fill();
-  g.textAlign="center";g.fillStyle="#fff";g.font="900 32px "+F;g.fillText(d.ringTop,1080,185);g.font="900 80px "+F;g.fillText(d.ringMain,1080,265);g.font="900 36px "+F;g.fillText(d.ringBottom,1080,312);g.textAlign="left";
+  g.textAlign="center";g.fillStyle="#fff";g.font="900 32px "+F;g.fillText(d.ringTop,1080,185);g.font="900 80px "+F;g.fillText(d.ringMain,1080,265);var bs=36;do{g.font="900 "+bs+"px "+F;bs-=2}while(g.measureText(d.ringBottom).width>200&&bs>14);g.fillText(d.ringBottom,1080,312);g.textAlign="left";
   g.font="900 36px "+F;var pw=g.measureText(d.pill).width;g.fillStyle="#fff";g.beginPath();g.roundRect(56,560,pw+56,64,32);g.fill();g.fillStyle="#E84F7D";g.fillText(d.pill,84,605);
   var url=c.toDataURL("image/png");document.getElementById("eyeimg").src=url;document.getElementById("eyesave").href=url;})();
 </script>

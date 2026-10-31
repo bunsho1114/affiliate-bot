@@ -1,6 +1,6 @@
 """今日の候補から選んで Threads に投稿し、state/posted.json に記録する。
 
-同じ商品は REPOST_DAYS 日のあいだ投稿しない。投稿直前に楽天から商品情報を取り直し、
+一度選んだ商品は二度と選ばず、同じジャンルは GENRE_DAYS 日あける。投稿直前に楽天から商品情報を取り直し、
 売り切れやセール終了の商品、セール期間外の商品は飛ばす。
 使い方: python -m bot.post [--count 4] [--dry-run]
 """
@@ -15,7 +15,7 @@ from bot import compose, rakuten, threads
 
 DAILY = "daily"
 STATE = "state/posted.json"
-REPOST_DAYS = 14
+GENRE_DAYS = 30
 ACCOUNT = "ziyuunote1018"  # 投稿してよい Threads アカウント
 JST = compose.JST
 
@@ -29,8 +29,8 @@ def load(path, default):
 
 
 def recent_codes(posted, now):
-    limit = now - dt.timedelta(days=REPOST_DAYS)
-    return {code for code, v in posted.items() if dt.datetime.fromisoformat(v["at"]) >= limit}
+    """一度選んだ商品は、期間に関係なくもう選ばない（同じ商品の記事を二度書かないため）。"""
+    return set(posted)
 
 
 def image(item):
@@ -78,6 +78,10 @@ def main():
                       for code, v in posted.items()), reverse=True)
     day_ago = (now - dt.timedelta(hours=24)).isoformat(timespec="minutes")
     used = {(g, sh) for at, g, sh in history if at >= day_ago}
+    # 同じジャンル（例：ワイヤレスイヤホン）の商品は、選んでから GENRE_DAYS 日は選ばない
+    genre_limit = (now - dt.timedelta(days=GENRE_DAYS)).isoformat(timespec="minutes")
+    recent_genres = {v.get("genre") or genre_of.get(code, "") for code, v in posted.items()
+                     if v["at"] >= genre_limit} - {""}
     last = history[0][1:] if history else None
 
     def kind(item):
@@ -86,12 +90,14 @@ def main():
 
     def too_similar(item, strict):
         g, sh = kind(item)
+        if strict is not None and str(item.get("genreId", "")) in recent_genres:
+            return True
         if strict:
             return any(g == ug or sh == ush for ug, ush in used)
         return last is not None and (g == last[0] or sh == last[1])
 
     done = 0
-    for strict in (True, False):
+    for strict in (True, False, None):  # None: 候補が尽きたときだけ、同じジャンルも許す
         for c in candidates:
             code = c["itemCode"]
             if code in skip or too_similar(c["item"], strict):

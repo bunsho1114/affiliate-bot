@@ -1,0 +1,37 @@
+name: 口コミを読み直す
+
+# 手動で動かす用。今日の候補（daily ブランチ）の上位の口コミだけを読み直して daily/reviews.json に置く。
+# 毎朝は collect.yml の中で同じことをする。
+on:
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: "ページの一部を reviews_debug.txt に残す"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency: daily
+
+jobs:
+  reviews:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: daily ブランチを取ってくる
+        run: |
+          git fetch -q origin daily
+          git worktree add -q daily FETCH_HEAD
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 口コミを読む
+        run: python -m bot.reviews ${{ inputs.debug && '--debug' || '' }}
+      - name: daily ブランチに保存
+        run: |
+          cd daily
+          git -c user.name=bot -c user.email=bot@users.noreply.github.com add -A
+          git -c user.name=bot -c user.email=bot@users.noreply.github.com commit -qm "reviews ${{ github.run_id }}" || exit 0
+          git push -q "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:daily

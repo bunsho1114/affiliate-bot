@@ -25,7 +25,7 @@ def article(item, copy=None, now=None):
     """{"title", "md", "html", "tags", "eye", "threads"} を返す。
 
     copy は Claude が毎朝書く紹介文。使うのは hook / points / note と、
-    記事用の short（短い商品名）/ q（書き出しの問いかけ）/ catch（見出し画像の一言）/ honne（ちょっと本音）/
+    記事用の name（自然な商品名）/ short（短い商品名）/ q（書き出しの問いかけ）/ catch（見出し画像の一言）/ honne（ちょっと本音）/
     detail（Threads 返信1 用のくわしい説明）。
     """
     now = now or dt.datetime.now(compose.JST)
@@ -33,7 +33,7 @@ def article(item, copy=None, now=None):
     if compose._BANNED.search("".join(str(v) for v in copy.values())):
         print(f"::warning::note用の文に使えない表現があったので使いません: {copy}", flush=True)
         copy = {}
-    name = compose.clean_name(item.get("itemName", ""), limit=36)
+    name = copy.get("name") or compose.clean_name(item.get("itemName", ""), limit=36)
     short = copy.get("short") or compose.clean_name(item.get("itemName", ""), limit=16)
     sale = compose.label(item)
     cp = compose.coupon(item)

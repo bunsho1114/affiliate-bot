@@ -4,7 +4,7 @@
 
 1. `daily` ブランチを取ってくる：`git fetch origin daily && git checkout -B daily origin/daily`
 2. `candidates.json` を読む。各候補の `itemCode`, `itemName`, `itemCaption`, `sale`, `reviewAverage`, `reviewCount` を見る（`item` は元データなので読まなくてよい）。
-3. `copy.json`（`{itemCode: {"hook": ..., "points": [..., ...], "note": ..., "short": ..., "q": ..., "catch": ..., "honne": ..., "detail": ...}}`）に、まだ紹介文が無い候補の分だけ書き足す。すでにある分は変えない。
+3. `copy.json`（`{itemCode: {"hook": ..., "points": [..., ...], "note": ..., "name": ..., "short": ..., "q": ..., "catch": ..., "honne": ..., "detail": ...}}`）に、まだ紹介文が無い候補の分だけ書き足す。すでにある分は変えない。
 4. `copy.json` をコミットして `git push origin daily` する。main ブランチは触らない。
 
 ## 紹介文のルール
@@ -26,6 +26,7 @@
 
 - `hook`：思わず手が止まる一言。20文字以内。
 - `points`：魅力を2つ。それぞれ30文字以内。
+- `name`：「どんな商品？」に出す自然な商品名。ブランド名＋商品名で20〜30文字（例：「エメフィール 超盛ブラ シームレスタイプ」）。検索用の単語の羅列や「…」は入れない。
 - `short`：短い商品名。10文字前後（例：「骨取りさば」「国産はちみつ」）。note のタイトルと見出し画像の大きな文字になる。
 - `q`：note記事の書き出しの問いかけ。読む人の小さな悩みに話しかける1文（例：「魚料理って、骨を取るのがちょっと面倒じゃないですか？」）。
 - `catch`：見出し画像とタイトルの一言。16文字以内（例：「冷凍庫にストックしておきたい」）。
@@ -43,4 +44,4 @@
 - 「最安値」「No.1」「どこよりも安い」など根拠のない比較はしない。
 - 価格・割引率・評価の数字は書かない（別の行で表示する）。
 - 絵文字・ハッシュタグ・URLは使わない（`honne` の絵文字1つだけは可）。
-- `short` `q` `catch` `honne` `detail` は、candidates.json の上から5件だけ書けばよい（毎朝のページに出るのはたいてい上位の1件）。
+- `name` `short` `q` `catch` `honne` `detail` は、candidates.json の上から5件だけ書けばよい（毎朝のページに出るのはたいてい上位の1件）。

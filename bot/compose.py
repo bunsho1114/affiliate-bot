@@ -10,7 +10,7 @@ _PCT = re.compile(r"(最大)?\s*(\d{1,2})\s*[%％]\s*(?:OFF|オフ|off|Off)")
 _YEN_OFF = re.compile(r"(最大)?\s*([\d,]{2,7})\s*円\s*(?:OFF|オフ|off|引き|引)")
 _POINT = re.compile(r"ポイント\s*(\d{1,2})\s*倍")
 _TAG = re.compile(r"<[^>]+>")
-_BRACKETS = re.compile(r"[【\[［〔(（<＜《][^】\]］〕)）>＞》]{0,40}[】\]］〕)）>＞》]")
+_BRACKETS = re.compile(r"[【\[［〔(（<＜《][^】\]］〕)）>＞》]{0,120}([】\]］〕)）>＞》]|$)")  # 閉じていないカッコは最後まで消す
 
 
 def discount(item):
@@ -160,7 +160,11 @@ def clean_name(name, limit=42):
     name = re.sub(r"[【】\[\]［］〔〕＼／&＆+＋|｜]", " ", name)
     name = re.sub(r"[★☆◆◇■□●○♪！!※]+", " ", name)
     name = re.sub(r"\s+", " ", name).strip()
-    return name if len(name) <= limit else name[:limit].rstrip() + "…"
+    if len(name) <= limit:
+        return name
+    # 「…」で途中切れにすると不自然なので、言葉の切れ目（空白）で短くする
+    cut = name[:limit + 1].rsplit(" ", 1)[0]
+    return cut if len(cut) >= limit // 3 else name[:limit]
 
 
 def features(item, n=2):

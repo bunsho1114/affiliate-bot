@@ -125,12 +125,7 @@ def article(item, copy=None, now=None):
     r2 += ["", "※価格・在庫は変わることがあります", "",
            "商品ページとくわしいまとめは、プロフィールのリンクからどうぞ👇", "#PR"]
     threads = ["\n".join(main), "\n".join(r1 + extra), "\n".join(r2)]
-    body = to_html(md)
-    urls = item.get("mediumImageUrls") or []
-    if urls:  # 書式つきコピーで、商品画像も「どんな商品？」の下に一緒に貼れるようにする
-        img = html.escape(urls[0].split("?")[0] + "?_ex=600x600")
-        body = body.replace("どんな商品？</h2>", f'どんな商品？</h2>\n<p><img src="{img}" alt="{html.escape(short)}"></p>', 1)
-    return {"title": title, "md": "\n".join(md), "html": body, "tags": tags, "eye": eye,
+    return {"title": title, "md": "\n".join(md), "html": to_html(md), "tags": tags, "eye": eye,
             "threads": threads}
 
 

@@ -1,7 +1,7 @@
-name: 今日の1件を選ぶ
+name: 今日の楽天ROOM 5件を選ぶ
 
-# 毎朝 6:40（日本時間。6:10 の紹介文づくりのあと）に今日の1件を選び、
-# Threads と note にコピーして貼るための「今日の1件」ページを GitHub Pages に公開する。投稿は手作業。
+# 毎朝 6:40（日本時間。6:25 の紹介文づくりのあと）に今日の5件を選び、
+# 楽天ROOMにコピーして貼るためのページを GitHub Pages に公開する。投稿は手作業。
 # 選んだ商品は state ブランチの posted.json に記録し、同じ商品は二度と選ばない（同じジャンルも30日あける）。
 on:
   schedule:
@@ -13,9 +13,9 @@ on:
         type: boolean
         default: false
       count:
-        description: "投稿する件数"
+        description: "選ぶ件数"
         type: number
-        default: 1
+        default: 5
 
 concurrency: post
 
@@ -35,12 +35,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: 今日の1件を選ぶ
+      - name: 今日の楽天ROOM 5件を選ぶ
         env:
           RAKUTEN_APP_ID: ${{ secrets.RAKUTEN_APP_ID }}
           RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
           RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
-        run: python -m bot.post --count ${{ inputs.count || 1 }} --record-only ${{ inputs.dry_run && '--dry-run' || '' }} ${{ github.event_name == 'schedule' && '--min-since 600' || '' }}
+        run: python -m bot.post --count ${{ inputs.count || 5 }} --record-only ${{ inputs.dry_run && '--dry-run' || '' }} ${{ github.event_name == 'schedule' && '--min-since 600' || '' }}
       - name: 選んだ商品の記録を state ブランチに保存
         if: ${{ always() && !inputs.dry_run && hashFiles('state/posted.json') != '' }}
         run: |

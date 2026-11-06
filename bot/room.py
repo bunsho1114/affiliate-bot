@@ -64,8 +64,18 @@ ROOM_MAX = 500  # ROOM の紹介文は500字まで
 ROOM_DROP = ("【まとめ】", "結論から", "【ちょっと本音】", "セールはもうすぐ", "今回は", "【みんなの評価は？】")
 
 
-def room_comment(article):
-    """note の記事を、ROOM に貼れる飾りなしの文にする（リンクやnote向けの一言は外す）。"""
+def deal_line(item, now):
+    """紹介文の最初に出す「どれだけ安いか・いつまでか」（ユーザー希望 2026-11-06）。"""
+    price = int(item.get("itemPrice") or 0)
+    head = f"🔥{compose.label(item)}で{price:,}円！" + ("（クーポン適用前）" if compose.coupon(item) else "")
+    end = compose.sale_period(item, now)[1]
+    when = f"⏰{note._end_text(end)}まで（ショップ表記）" if end else "⏰セール期間はショップのページでご確認ください"
+    return head + "\n" + when
+
+
+def room_comment(article, deal=""):
+    """note の記事を、ROOM に貼れる飾りなしの文にする（リンクやnote向けの一言は外す）。
+    deal（値段と期限）を先頭に置き、本文の「どれくらいおトク？」は重なるので外す。"""
     lines = []
     for line in article["md"].split("\n"):
         if line.startswith("http") or line.startswith("▼") or "スキやフォロー" in line or "商品ページでチェック" in line:
@@ -78,13 +88,15 @@ def room_comment(article):
         if line or (lines and lines[-1] and not lines[-1].startswith("【")):
             lines.append(line)
     blocks = "\n".join(lines).strip().split("\n\n") + [article["tags"]]
+    if deal:
+        blocks = [deal] + [b for b in blocks if not b.startswith("【どれくらいおトク？】")]
     # 長いときは、ほかと重なる部分から順に外す
     for head in ROOM_DROP:
         if len("\n\n".join(blocks)) <= ROOM_MAX:
             break
         blocks = [b for b in blocks if not b.startswith(head)]
     while len("\n\n".join(blocks)) > ROOM_MAX and len(blocks) > 3:
-        blocks.pop(-3)  # 最後の注意書きとハッシュタグは残す
+        blocks.pop(-3)  # 先頭の値段・期限と、最後の注意書きとハッシュタグは残す
     text = "\n\n".join(blocks)
     return text
 
@@ -121,7 +133,7 @@ def build():
             "img": html.escape(post.image(item) or ""),
             "name": html.escape((copy or {}).get("name") or compose.clean_name(item.get("itemName", ""), limit=36)),
             "meta": html.escape(meta),
-            "room": html.escape(room_comment(a)),
+            "room": html.escape(room_comment(a, deal_line(item, now))),
             "room_url": html.escape(ROOM_URL.format(code=urllib.parse.quote(c["itemCode"], safe=":"))),
         }))
     return fill(PAGE, {"date": now.strftime("%-m月%-d日 %H:%M"), "count": str(len(chosen)),

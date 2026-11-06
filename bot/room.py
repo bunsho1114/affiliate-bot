@@ -69,8 +69,8 @@ def deal_line(item, now):
     price = int(item.get("itemPrice") or 0)
     head = f"🔥{compose.label(item)}で{price:,}円！" + ("（クーポン適用前）" if compose.coupon(item) else "")
     end = compose.sale_period(item, now)[1]
-    when = f"⏰{note._end_text(end)}まで（ショップ表記）" if end else "⏰セール期間はショップのページでご確認ください"
-    return head + "\n" + when
+    # 期限が分からないときは何も書かない（ユーザー希望 2026-11-06）
+    return head + (f"\n⏰{note._end_text(end)}まで（ショップ表記）" if end else "")
 
 
 def room_comment(article, deal=""):

@@ -89,7 +89,8 @@ def room_comment(article, deal=""):
             lines.append(line)
     blocks = "\n".join(lines).strip().split("\n\n") + [article["tags"]]
     if deal:
-        blocks = [deal] + [b for b in blocks if not b.startswith("【どれくらいおトク？】")]
+        blocks = [b for b in blocks if not b.startswith("【どれくらいおトク？】")]
+        blocks[0] = deal + "\n" + blocks[0]  # 値段と書き出しの間は空けない（ユーザー希望 2026-11-06）
     # 長いときは、ほかと重なる部分から順に外す
     for head in ROOM_DROP:
         if len("\n\n".join(blocks)) <= ROOM_MAX:

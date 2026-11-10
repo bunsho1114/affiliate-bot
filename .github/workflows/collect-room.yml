@@ -3,8 +3,9 @@ name: セール商品を集める
 # 毎朝 5:40（日本時間）に候補を集めて daily ブランチに置く。
 # そのあと 6:10 に Claude が daily/candidates.json を読んで daily/copy.json に紹介文を書く。
 on:
-  schedule:
-    - cron: "40 20 * * *"
+  # 一時停止中（ユーザー希望 2026-11-10）。再開するときは下の2行の # を外す
+  # schedule:
+  #   - cron: "40 20 * * *"
   workflow_dispatch:
 
 permissions:

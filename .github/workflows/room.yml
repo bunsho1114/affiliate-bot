@@ -4,8 +4,9 @@ name: 今日の楽天ROOM 5件を選ぶ
 # 楽天ROOMにコピーして貼るためのページを GitHub Pages に公開する。投稿は手作業。
 # 選んだ商品は state ブランチの posted.json に記録し、同じ商品は二度と選ばない（同じジャンルも30日あける）。
 on:
-  schedule:
-    - cron: "40 21 * * *"
+  # 一時停止中（ユーザー希望 2026-11-10）。再開するときは下の2行の # を外す
+  # schedule:
+  #   - cron: "40 21 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
